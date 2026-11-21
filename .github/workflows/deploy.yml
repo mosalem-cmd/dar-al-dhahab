@@ -1,0 +1,47 @@
+# Deploy to GitHub Pages on push to main, only after CI passes.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Site files only (no tests, workflows, SQL or docs)
+      - name: Build _site
+        run: |
+          mkdir _site
+          cp index.html sw.js manifest.webmanifest privacy.html delete-data.html *.png _site/
+          cp -r icons _site/
+
+      # Fail if anything referenced by index.html / sw.js / manifest is missing
+      - name: Check referenced files
+        run: node tests/check-site.js _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

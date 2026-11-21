@@ -1,0 +1,38 @@
+# CI: tests + checks. Runs on PRs, and is reused by deploy.yml on push to main.
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # calc/num/fmt + sw.js version + manifest
+      - name: Unit tests
+        run: node --test 'tests/*.test.js'
+
+      - name: sw.js is valid JavaScript
+        run: node --check sw.js
+
+      - name: Secret scan
+        run: node tests/secret-scan.js
+
+      # Warning only: placeholder email still present
+      - name: CONTACT_EMAIL placeholder
+        run: |
+          for f in privacy.html delete-data.html index.html; do
+            if grep -q CONTACT_EMAIL "$f"; then
+              echo "::warning file=$f::Placeholder CONTACT_EMAIL is still present"
+            fi
+          done
