@@ -13,19 +13,20 @@ function line(name) {
   return m[0];
 }
 
-// function calc(i){...}: take everything up to the matching closing brace
-function calcSource() {
-  const start = html.indexOf('function calc(i){');
-  if (start < 0) throw new Error('Could not find "function calc(i){" in index.html');
+// function name(...){...}: take everything up to the matching closing brace
+function fnSource(name) {
+  const start = html.indexOf(`function ${name}(`);
+  if (start < 0) throw new Error(`Could not find "function ${name}(" in index.html`);
   let depth = 0;
   for (let i = html.indexOf('{', start); i < html.length; i++) {
     if (html[i] === '{') depth++;
     else if (html[i] === '}' && --depth === 0) return html.slice(start, i + 1);
   }
-  throw new Error('Unbalanced braces in calc()');
+  throw new Error(`Unbalanced braces in ${name}()`);
 }
 
-const code = [line('AR'), line('num'), line('fmt'), calcSource(), 'this.api={calc,num,fmt};'].join('\n');
+const code = [line('AR'), line('num'), line('fmt'), fnSource('payAmt'), fnSource('dashStats'), fnSource('calc'),
+  'this.api={calc,num,fmt,payAmt,dashStats};'].join('\n');
 const ctx = vm.createContext({});
 vm.runInContext(code, ctx);
 

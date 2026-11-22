@@ -1,7 +1,7 @@
 // Tests for the invoice math in index.html (node:test, no dependencies).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calc, num, fmt } = require('./extract');
+const { calc, num, fmt, dashStats } = require('./extract');
 
 test('baseline invoice', () => {
   const r = calc({
@@ -42,4 +42,52 @@ test('tons <= 0 gives recovery 0', () => {
   assert.equal(calc({ grams: '100', tons: '0' }).recov, 0);
   assert.equal(calc({ grams: '100', tons: '-1' }).recov, 0);
   assert.equal(calc({ grams: '100' }).recov, 0);
+});
+
+// ---- v2.4.2: ربح المطحنة والمسدَّد والمتبقي (من التكاليف فقط، لا من صافي الزبون) ----
+const inv = (extra = {}) => ({
+  grams: '100', gramPrice: '3000', tons: '2',
+  costs: [{ qty: '2', unit: '15000' }, { qty: '', unit: '10000' }], // التكاليف = 40000
+  pcts: [{ pct: '100' }], ...extra,
+});
+
+test('paid amount: remaining comes from costs, not from customer net', () => {
+  const r = calc(inv({ paidAmt: '25000' }));
+  assert.equal(r.net, 260000);        // صافي الزبون لا يتغير
+  assert.equal(r.paid, 25000);
+  assert.equal(r.remaining, 15000);   // 40000 - 25000
+});
+
+test('legacy invoices (no paidAmt): paid=true means costs fully paid', () => {
+  assert.equal(calc(inv({ paid: true })).remaining, 0);
+  assert.equal(calc(inv({ paid: false })).remaining, 40000);
+});
+
+test('overpayment never gives a negative remaining', () => {
+  const r = calc(inv({ paidAmt: '50000' }));
+  assert.equal(r.remaining, 0);
+  assert.equal(r.paid, 50000);
+});
+
+test('dashboard: profit = billed costs - mill expenses', () => {
+  const d = dashStats([{ costsTotal: 40000, net: 260000, paidAmt: 25000 }], 8000);
+  assert.equal(d.billed, 40000);
+  assert.equal(d.profit, 32000);      // 40000 - 8000
+  assert.equal(d.paid, 25000);
+  assert.equal(d.remaining, 15000);
+  assert.equal(d.unpaidCount, 1);
+});
+
+test('dashboard: legacy paid invoice, several invoices, expenses above costs', () => {
+  const d = dashStats([
+    { costsTotal: 40000, paid: true },              // قديمة مسدَّدة
+    { costsTotal: 10000, paid: false },             // قديمة غير مسدَّدة
+    { costsTotal: 5000, paidAmt: 2000 },
+  ], 70000);
+  assert.equal(d.billed, 55000);
+  assert.equal(d.paid, 42000);
+  assert.equal(d.remaining, 13000);
+  assert.equal(d.unpaidCount, 2);
+  assert.equal(d.profit, -15000);     // لا ينهار مع ربح سالب
+  assert.deepEqual({ ...dashStats([], 0) }, { billed: 0, paid: 0, remaining: 0, unpaidCount: 0, profit: 0 });
 });
