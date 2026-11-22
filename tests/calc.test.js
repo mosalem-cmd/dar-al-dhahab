@@ -1,7 +1,7 @@
 // Tests for the invoice math in index.html (node:test, no dependencies).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calc, num, fmt, dashStats } = require('./extract');
+const { calc, num, fmt, dashStats, reportStats, repSeries } = require('./extract');
 
 test('baseline invoice', () => {
   const r = calc({
@@ -90,4 +90,36 @@ test('dashboard: legacy paid invoice, several invoices, expenses above costs', (
   assert.equal(d.unpaidCount, 2);
   assert.equal(d.profit, -15000);     // لا ينهار مع ربح سالب
   assert.deepEqual({ ...dashStats([], 0) }, { billed: 0, paid: 0, remaining: 0, unpaidCount: 0, profit: 0 });
+});
+
+// ---- v2.4.5: صفحة «اللوحة» (التقارير): المداخيل = التكاليف المفوترة، والصافي = المداخيل − المصاريف ----
+const bill = { date: '2026-11-05', goldTotal: 2040000, costsTotal: 179500, net: 1860500 };
+
+test('report: income is billed costs, net is income minus mill expenses', () => {
+  const r = reportStats([bill], 30000);
+  assert.equal(r.sales, 2040000);     // مبيعات الذهب (بطاقة منفصلة)
+  assert.equal(r.income, 179500);     // المداخيل
+  assert.equal(r.expenses, 30000);
+  assert.equal(r.net, 149500);        // 179500 - 30000
+  assert.equal(reportStats([bill], 0).net, 179500);
+});
+
+test('report: expenses above costs give a negative net, empty list is zero', () => {
+  assert.equal(reportStats([bill], 200000).net, -20500);
+  assert.deepEqual({ ...reportStats([], 0) }, { sales: 0, income: 0, expenses: 0, net: 0 });
+});
+
+test('report series: net per day = costs - expenses of that day', () => {
+  const ser = repSeries(
+    [bill, { date: '2026-11-05', goldTotal: 100, costsTotal: 500 }],
+    [{ date: '2026-11-05', amount: '1000' }, { date: '2026-11-07', amount: '2500' }, { date: '2026-12-01', amount: '9999' }],
+    true, '2026-11-01', '2026-11-30');
+  assert.deepEqual({ ...ser['11-05'] }, { net: 179500 + 500 - 1000, sales: 2040100, cost: 180000 });
+  assert.deepEqual({ ...ser['11-07'] }, { net: -2500, sales: 0, cost: 0 });   // يوم فيه مصاريف فقط
+  assert.equal(ser['12-01'], undefined);                                       // خارج الفترة
+});
+
+test('report series by month', () => {
+  const ser = repSeries([bill], [{ date: '2026-11-20', amount: 4500 }], false, '0000', '9999');
+  assert.equal(ser['2026-11'].net, 175000);
 });
