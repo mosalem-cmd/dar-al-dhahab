@@ -600,7 +600,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.4.3';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.4.4';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -1496,7 +1496,7 @@ ar:{t:'سياسة الخصوصية',d:'آخر تحديث: 18 نوفمبر 2026',
  ['حذف الحساب والبيانات','من الإعدادات ← «حذف الحساب»، بكلمة السر، يُحذف حسابك وكل بياناته نهائيا من الخادم ومن هاتفك فورا. نحتفظ فقط بسجل المدفوعات (المبلغ والتاريخ واسم المطحنة ورقمها) لأغراض المحاسبة. ويمكنك أيضا طلب الحذف من صفحة حذف البيانات على موقعنا.'],
  ['الأطفال','التطبيق موجّه لأصحاب المطاحن والعاملين فيها، وليس للأطفال.'],
  ['التغييرات','إذا تغيّرت هذه السياسة سنحدّث تاريخها أعلاه وننشرها داخل التطبيق.'],
- ['التواصل','لأي سؤال: daraldhahab.support@gmail.com']]},
+ ['التواصل','للشكاوى والملاحظات: من «الإعدادات» ثم «الشكاوى والملاحظات». للأمور القانونية وطلبات حذف البيانات: daraldhahab.support@gmail.com']]},
 fr:{t:'Politique de confidentialité',d:'Dernière mise à jour : 18 novembre 2026',b:[
  ['En bref','« Maison de l’Or » est une application de factures pour moulins à or. Chaque moulin a un compte (téléphone + mot de passe) et ses données sont enregistrées sur un serveur sécurisé. Nous ne vendons pas vos données et n\'utilisons ni publicité ni pistage.'],
  ['Données enregistrées','Compte : téléphone, nom du moulin, second téléphone éventuel, mot de passe chiffré. Données de travail : factures, clients et leurs téléphones, notes, paramètres, messages envoyés à l\'administration et paiements enregistrés.'],
@@ -1508,7 +1508,7 @@ fr:{t:'Politique de confidentialité',d:'Dernière mise à jour : 18 novembre 20
  ['Suppression du compte','Réglages → « Supprimer le compte » (avec mot de passe) supprime immédiatement et définitivement le compte et toutes ses données du serveur et du téléphone. Seul l’historique des paiements (montant, date, nom et numéro du moulin) est conservé à des fins comptables. Vous pouvez aussi demander la suppression depuis notre page web dédiée.'],
  ['Enfants','Application destinée aux moulins, pas aux enfants.'],
  ['Modifications','Toute modification sera datée ci-dessus et publiée dans l\'application.'],
- ['Contact','Pour toute question : daraldhahab.support@gmail.com']]}};
+ ['Contact','Réclamations et remarques : dans « Paramètres » puis « Réclamations et remarques ». Questions juridiques et demandes de suppression de données : daraldhahab.support@gmail.com']]}};
 function openPriv(){const P=PRIVACY[lang];
   $('#vPriv').innerHTML=`<div class="card"><h2 style="font-size:20px">${P.t}</h2><p class="m">${P.d}</p>
    ${P.b.map(x=>`<h3 style="margin:14px 0 4px;font-size:16px">${x[0]}</h3><p style="margin:0;color:var(--mut)">${esc(x[1])}</p>`).join('')}</div>
