@@ -1,7 +1,7 @@
 // Tests for the invoice math in index.html (node:test, no dependencies).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calc, num, fmt, dashStats, reportStats, repSeries } = require('./extract');
+const { calc, num, fmt, dashStats, reportStats, repSeries, buildSettings } = require('./extract');
 
 test('baseline invoice', () => {
   const r = calc({
@@ -122,4 +122,24 @@ test('report series: net per day = costs - expenses of that day', () => {
 test('report series by month', () => {
   const ser = repSeries([bill], [{ date: '2026-11-20', amount: 4500 }], false, '0000', '9999');
   assert.equal(ser['2026-11'].net, 175000);
+});
+
+// ---- v2.4.6: حفظ الإعدادات (الاسم والهاتف وبقية الحقول والبنود) ----
+test('settings: name and phones are saved trimmed, startNo is numeric', () => {
+  const { n, err } = buildSettings({ name: 'Old', ph1: '111', ph2: '', startNo: 1, currency: 'MRU' },
+    { name: '  إدارة دار الذهب ', ph1: ' 38449999 ', ph2: '', startNo: '٥' }, ['A'], []);
+  assert.equal(err, null);
+  assert.equal(n.name, 'إدارة دار الذهب');
+  assert.equal(n.ph1, '38449999');
+  assert.equal(n.startNo, 5);          // رقم عربي
+  assert.equal(n.currency, 'MRU');     // ما لم يُمسّ يبقى
+});
+
+test('settings: empty name is rejected, blank list rows are dropped', () => {
+  assert.equal(buildSettings({ name: 'X' }, { name: '   ' }, [], []).err, 'name');
+  const { n } = buildSettings({ name: 'X' }, {}, ['الطحن', '  ', ''], [{ name: 'العمال', pct: ' 40 ' }, { name: ' ', pct: '10' }]);
+  // نحوّل إلى JSON لأن الكائنات تأتي من صندوق vm (عالم مختلف)
+  assert.deepEqual(JSON.parse(JSON.stringify(n.costList)), ['الطحن']);
+  assert.deepEqual(JSON.parse(JSON.stringify(n.partList)), [{ name: 'العمال', pct: '40' }]);
+  assert.equal(n.name, 'X');
 });
