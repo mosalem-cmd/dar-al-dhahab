@@ -93,11 +93,12 @@ test('dashboard: legacy paid invoice, several invoices, expenses above costs', (
 });
 
 // ---- v2.4.5: صفحة «اللوحة» (التقارير): المداخيل = التكاليف المفوترة، والصافي = المداخيل − المصاريف ----
-const bill = { date: '2026-11-05', goldTotal: 2040000, costsTotal: 179500, net: 1860500 };
+const bill = { date: '2026-11-05', grams: '600', goldTotal: 2040000, costsTotal: 179500, net: 1860500 };
 
 test('report: income is billed costs, net is income minus mill expenses', () => {
   const r = reportStats([bill], 30000);
-  assert.equal(r.sales, 2040000);     // مبيعات الذهب (بطاقة منفصلة)
+  assert.equal(r.sales, undefined);   // v2.6.0: مجموع ذهب الزبون لا يخرج من التقرير
+  assert.equal(r.avgPrice, 3400);     // متوسط سعر الغرام فقط = 2040000 / 600
   assert.equal(r.income, 179500);     // المداخيل
   assert.equal(r.expenses, 30000);
   assert.equal(r.net, 149500);        // 179500 - 30000
@@ -106,7 +107,7 @@ test('report: income is billed costs, net is income minus mill expenses', () => 
 
 test('report: expenses above costs give a negative net, empty list is zero', () => {
   assert.equal(reportStats([bill], 200000).net, -20500);
-  assert.deepEqual({ ...reportStats([], 0) }, { sales: 0, income: 0, expenses: 0, net: 0 });
+  assert.deepEqual({ ...reportStats([], 0) }, { income: 0, expenses: 0, net: 0, avgPrice: 0 });
 });
 
 test('report series: net per day = costs - expenses of that day', () => {
@@ -114,8 +115,8 @@ test('report series: net per day = costs - expenses of that day', () => {
     [bill, { date: '2026-11-05', goldTotal: 100, costsTotal: 500 }],
     [{ date: '2026-11-05', amount: '1000' }, { date: '2026-11-07', amount: '2500' }, { date: '2026-12-01', amount: '9999' }],
     true, '2026-11-01', '2026-11-30');
-  assert.deepEqual({ ...ser['11-05'] }, { net: 179500 + 500 - 1000, sales: 2040100, cost: 180000 });
-  assert.deepEqual({ ...ser['11-07'] }, { net: -2500, sales: 0, cost: 0 });   // يوم فيه مصاريف فقط
+  assert.deepEqual({ ...ser['11-05'] }, { net: 179500 + 500 - 1000, cost: 180000, exp: 1000 });
+  assert.deepEqual({ ...ser['11-07'] }, { net: -2500, cost: 0, exp: 2500 });   // يوم فيه مصاريف فقط
   assert.equal(ser['12-01'], undefined);                                       // خارج الفترة
 });
 
