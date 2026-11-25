@@ -83,3 +83,12 @@ test('service worker caches help.js', () => {
   assert.match(sw, /'\.\/help\.js'/);
   assert.match(sw, /const VERSION='dar-v2\.5\.0'/);
 });
+
+test('dark-mode logo: transparent version used in dark mode only, phone icon unchanged', () => {
+  assert.ok(fs.existsSync(path.join(root, 'logo-dark.png')), 'logo-dark.png missing');
+  assert.match(html, /\[data-theme=dark\] img\.logo[^{]*\{[^}]*content:url\(logo-dark\.png\)/);
+  assert.doesNotMatch(html.replace(/\[data-theme=dark\][^{]*\{[^}]*\}/g, ''), /logo-dark\.png/, 'light mode must keep logo.png');
+  assert.match(read('sw.js'), /'\.\/logo-dark\.png'/);
+  const icons = JSON.parse(read('manifest.webmanifest')).icons.map(i => i.src);
+  assert.ok(!icons.some(s => /logo-dark/.test(s)), 'manifest icons must not change');
+});

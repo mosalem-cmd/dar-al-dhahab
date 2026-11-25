@@ -360,7 +360,7 @@ button.pri,[data-theme=dark] button.pri{background:#2e0e02!important;color:#fff!
 /* ===== v2.5.0: زر المساعدة ونافذة المحادثة (المنطق والمحتوى في help.js) ===== */
 :root{--hdr:#2e0e02;--hdr-ink:#fff;--pri:#2e0e02;--pri-ink:#fff;--hl:#e07b00}
 [data-theme=dark]{--hdr:#181b1f;--hdr-ink:#ece8df;--pri:#d8b56a;--pri-ink:#1b1408;--hl:#ffb020}
-.helpfab{position:fixed;left:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:8;width:56px;height:56px;border-radius:50%;padding:0;border:2px solid var(--card);background:var(--pri);color:var(--pri-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.28);transition:opacity .2s,transform .2s;-webkit-tap-highlight-color:transparent}
+.helpfab{position:fixed;left:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:8;width:56px;height:56px;border-radius:50%;padding:0;border:2px solid var(--fab-bd);background:var(--fab-bg);color:var(--fab-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.28);transition:opacity .2s,transform .2s;-webkit-tap-highlight-color:transparent}
 .helpfab svg{width:28px;height:28px}
 .helpfab:active{transform:scale(.92)}
 .helpfab.hid{opacity:0;transform:scale(.6);pointer-events:none}
@@ -385,6 +385,12 @@ button.pri,[data-theme=dark] button.pri{background:#2e0e02!important;color:#fff!
 .hin{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--card)}.hin input{flex:1;min-width:0}.hin button{min-height:44px}
 .hlp rect{animation:hdash 1.1s linear infinite}@keyframes hdash{to{stroke-dashoffset:-24}}
 @media (prefers-reduced-motion:reduce){.helpfab,.helpfab:active{transition:none;transform:none}.hlp rect{animation:none}}
+/* الشعار وزر المساعدة بأسلوب واحد: ذهبي على البني في الفاتح، وذهبي بلا خلفية بنية في الداكن.
+   أيقونة الهاتف (manifest) والوضع الفاتح لا يتغيران؛ صورة الفاتورة تستعمل الشعار الأصلي دائمًا */
+:root{--fab-bg:#2e0e02;--fab-ink:#e6a823;--fab-bd:var(--card)}
+[data-theme=dark]{--fab-bg:var(--card);--fab-ink:#e6b54a;--fab-bd:color-mix(in srgb,#e6b54a 70%,transparent)}
+[data-theme=dark] img.logo,[data-theme=dark] img[src$="logo.png"]{content:url(logo-dark.png);background:transparent;box-shadow:none!important}
+
 
 /* ===== v2.4.2 ===== */
 /* 6: لوحات الحفظ في أسفل الصفحة ضمن المحتوى، لا تطفو فوقه */
