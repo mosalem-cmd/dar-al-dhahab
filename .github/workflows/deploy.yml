@@ -30,7 +30,7 @@ jobs:
       - name: Build _site
         run: |
           mkdir _site
-          cp index.html sw.js manifest.webmanifest privacy.html delete-data.html *.png _site/
+          cp index.html sw.js help.js manifest.webmanifest privacy.html delete-data.html *.png _site/
           cp -r icons _site/
 
       # Fail if anything referenced by index.html / sw.js / manifest is missing
