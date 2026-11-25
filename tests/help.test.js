@@ -75,11 +75,31 @@ test('phase-2 ticket structure is built without any server call', () => {
   assert.equal(t.text.length, 500);
   assert.equal(t.lang, 'fr');
   assert.equal(t.appVersion, '2.5.0');
-  assert.ok(!/rpc\(|fetch\(|XMLHttpRequest/.test(read('help.js')), 'help.js must not call a server');
+  // الاتصال الوحيد المسموح: rpc('help_request') ولمن له جلسة فقط (canSend)
+  const src = read('help.js');
+  assert.ok(!/fetch\(|XMLHttpRequest/.test(src), 'no direct network calls');
+  assert.deepEqual([...src.matchAll(/rpc\('([a-z_]+)'/g)].map(m => m[1]), ['help_request']);
+  assert.match(src, /if \(!canSend\(\)\) \{[^}]*return; \}/, 'must not send without a session');
+});
+
+test('phase 2: sending is allowed only with a session', () => {
+  const load = pre => { const c = vm.createContext({}); vm.runInContext(pre, c); vm.runInContext(read('help.js'), c); return c.DarHelp; };
+  assert.equal(load('var sess = null; function rpc(){}').canSend(), false, 'login page / no session');
+  assert.equal(load('var sess = {token:"t"}; function rpc(){}').canSend(), true, 'signed in');
+  assert.equal(load('var sess = {token:"t"};').canSend(), false, 'no rpc available');
+});
+
+test('phase 2 SQL: session required, rate-limited, help kind allowed', () => {
+  const sql = read('4_help_requests.sql');
+  assert.match(sql, /help_request\(p_token text[\s\S]*public\._acct\(p_token\)/);
+  assert.match(sql, /n >= 5 then raise exception 'E_RATE'/);
+  assert.match(sql, /'complaint','note','suggestion','help'/);
+  assert.match(sql, /admin_help_stats[\s\S]*public\._admin\(p_token\)/);
+  assert.doesNotMatch(sql, /grant [^;]* to (authenticated|public)/i);
 });
 
 test('service worker caches help.js', () => {
   const sw = read('sw.js');
   assert.match(sw, /'\.\/help\.js'/);
-  assert.match(sw, /const VERSION='dar-v2\.5\.0'/);
+  assert.match(sw, /const VERSION='dar-v2\.6\.0'/);
 });

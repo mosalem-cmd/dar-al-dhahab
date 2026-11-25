@@ -22,7 +22,9 @@
       ph: 'اكتب مشكلتك هنا…', send: 'إرسال', stepsH: 'الحل خطوة بخطوة:', did: 'هل حُلّت المشكلة؟',
       contactIntro: 'تواصل مع إدارة دار الذهب:', wa: 'واتساب', mail: 'البريد',
       inApp: 'راسل الإدارة من «الإعدادات ← الشكاوى والملاحظات».', openMsgs: 'فتح الشكاوى والملاحظات',
-      noSess: 'تواصل مع الجهة التي أعطتك رمز الاعتماد.'
+      noSess: 'تواصل مع الجهة التي أعطتك رمز الاعتماد.',
+      sending: 'جارٍ إرسال طلبك إلى الإدارة…', sentOk: 'وصل طلبك إلى الإدارة، وستجد الرد في «الإعدادات ← الشكاوى والملاحظات».',
+      offline: 'لا يوجد اتصال بالإنترنت، فلم يُرسل الطلب.', rate: 'أرسلت طلبات كثيرة، انتظر قليلًا ثم حاول.', sendErr: 'تعذّر إرسال الطلب.'
     },
     fr: {
       fab: 'Aide', title: 'Aide Maison de l’Or', close: 'Fermer',
@@ -33,7 +35,9 @@
       ph: 'Décrivez votre problème…', send: 'Envoyer', stepsH: 'La solution, étape par étape :', did: 'Le problème est-il résolu ?',
       contactIntro: 'Contactez l’administration de Maison de l’Or :', wa: 'WhatsApp', mail: 'E-mail',
       inApp: 'Écrivez à l’administration depuis « Paramètres → Réclamations et remarques ».', openMsgs: 'Ouvrir Réclamations et remarques',
-      noSess: 'Contactez la personne qui vous a donné le code d’approbation.'
+      noSess: 'Contactez la personne qui vous a donné le code d’approbation.',
+      sending: 'Envoi de votre demande à l’administration…', sentOk: 'Votre demande est arrivée à l’administration ; la réponse sera dans « Paramètres → Réclamations et remarques ».',
+      offline: 'Pas de connexion Internet : la demande n’a pas été envoyée.', rate: 'Trop de demandes envoyées, patientez un peu.', sendErr: 'Échec de l’envoi de la demande.'
     }
   };
 
@@ -214,11 +218,17 @@
   }
 
   // ===== قناة التواصل: الثابت أعلاه، أو بديل حسب وجود جلسة =====
-  function contactHtml(hasSess, lng, contact) {
+  // روابط القناة فقط (فارغة إن لم يُملأ الثابت)
+  function contactLinks(lng, contact) {
     const U = UI[lng === 'fr' ? 'fr' : 'ar'], c = contact || ADMIN_CONTACT, wa = String(c.whatsapp || '').replace(/\D/g, ''), em = String(c.email || '').trim();
-    if (wa || em) return `<p>${U.contactIntro}</p><div class="hlinks">` +
+    if (!wa && !em) return '';
+    return `<p>${U.contactIntro}</p><div class="hlinks">` +
       (wa ? `<a class="hlink" href="https://wa.me/${wa}" target="_blank" rel="noopener">${U.wa}</a>` : '') +
       (em ? `<a class="hlink" href="mailto:${esc(em)}">${U.mail}: <bdi>${esc(em)}</bdi></a>` : '') + '</div>';
+  }
+  function contactHtml(hasSess, lng, contact) {
+    const U = UI[lng === 'fr' ? 'fr' : 'ar'], links = contactLinks(lng, contact);
+    if (links) return links;
     return hasSess ? `<p>${U.inApp}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` : `<p>${U.noSess}</p>`;
   }
 
@@ -265,10 +275,21 @@
     add(`<p>${U.stepsH}</p><ol class="hsteps">${p.steps.map(s => `<li><p>${esc(s[l])}</p>${s.contact ? `<div class="hcontact">${contactHtml(hasSess(), l)}</div>` : ''}${s.img ? `<figure class="himg">${svg(s.img[0], s.img[1], l)}</figure>` : ''}</li>`).join('')}</ol>` +
       `<p class="hq">${U.did}</p><div class="hact"><button type="button" class="pri" data-hok="${p.id}">${U.solved}</button><button type="button" data-hno="${p.id}">${U.persist}</button></div>`);
   }
-  // المرحلة 1: يعرض قناة التواصل فقط. المرحلة 2 (بعد عرض SQL والموافقة) ترسل الطلب للمشرفين.
-  function helpSubmit(ticket) {
-    const l = cur(), U = UI[l];
-    add(`<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>${contactHtml(hasSess(), l)}<div class="hact"><button type="button" data-hmenu>${U.more}</button></div>`);
+  // المرحلة 2: من له جلسة يُرسَل طلبه للمشرفين (help_request في 4_help_requests.sql)؛ بلا جلسة لا إرسال، فقط قناة التواصل
+  const canSend = () => { try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
+  async function helpSubmit(ticket) {
+    const l = cur(), U = UI[l], more = `<div class="hact"><button type="button" data-hmenu>${U.more}</button></div>`;
+    const lead = `<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>`;
+    if (!canSend()) { add(lead + contactHtml(hasSess(), l) + more); return; }
+    const box = add(lead + `<p>${U.sending}</p>`);
+    try {
+      let tk = ''; try { tk = tok(); } catch (e) {}
+      await rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } });
+      box.innerHTML = lead + `<p>${U.sentOk}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` + contactLinks(l) + more;
+    } catch (e) {
+      const c = e && e.code;
+      box.innerHTML = lead + `<p>${c === 'E_NET' ? U.offline : c === 'E_RATE' ? U.rate : U.sendErr}</p>` + contactHtml(true, l) + more;
+    }
   }
 
   function openChat() {
@@ -313,6 +334,7 @@
     upd();
   }
 
-  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, buildTicket, open: openChat };
+  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, open: openChat,
+    title: (id, l) => { const p = HELP.find(x => x.id === id); return p ? p.t[l === 'fr' ? 'fr' : 'ar'] : (id === 'free' || !id ? (l === 'fr' ? 'Texte libre' : 'نص حر') : id); } };
   if (typeof document !== 'undefined') init();
 })(typeof window !== 'undefined' ? window : globalThis);
