@@ -82,16 +82,13 @@ test('phase-2 ticket structure is built without any server call', () => {
   assert.match(src, /if \(!canSend\(\)\) \{[^}]*return; \}/, 'must not send without a session');
 });
 
-test('phase 2 is stopped: help never sends, even for a signed-in user', () => {
-  assert.match(read('help.js'), /const HELP_SEND_ENABLED = false;/, 'sending switch must stay off');
-  const load = (pre, src) => { const c = vm.createContext({}); vm.runInContext(pre, c); vm.runInContext(src || read('help.js'), c); return c.DarHelp; };
-  assert.equal(load('var sess = {token:"t"}; function rpc(){}').canSend(), false, 'switch off: no sending');
-  assert.equal(load('var sess = null; function rpc(){}').canSend(), false, 'login page');
-  // إذا فُعّل المفتاح لاحقًا (بموافقة): الإرسال لمن له جلسة فقط
-  const on = read('help.js').replace('const HELP_SEND_ENABLED = false;', 'const HELP_SEND_ENABLED = true;');
-  assert.equal(load('var sess = {token:"t"}; function rpc(){}', on).canSend(), true, 'switch on + session');
-  assert.equal(load('var sess = null; function rpc(){}', on).canSend(), false, 'switch on, no session');
-  assert.match(read('index.html'), /DarHelp\.sendEnabled\)\?await rpc\('admin_help_stats'/, 'admin stats call follows the switch');
+test('phase 2 is enabled: signed-in users send, the login page never does', () => {
+  assert.match(read('help.js'), /const HELP_SEND_ENABLED = true;/, 'sending switch must be on');
+  const load = pre => { const c = vm.createContext({}); vm.runInContext(pre, c); vm.runInContext(read('help.js'), c); return c.DarHelp; };
+  assert.equal(load('var sess = {token:"t"}; function rpc(){}').canSend(), true, 'signed in: sends');
+  assert.equal(load('var sess = null; function rpc(){}').canSend(), false, 'login page / no session');
+  assert.equal(load('var sess = {token:"t"};').canSend(), false, 'no rpc available');
+  assert.match(read('index.html'), /admCache\.help=await rpc\('admin_help_stats'/, 'admin card requests admin_help_stats');
 });
 
 test('phase 2 SQL: session required, rate-limited, help kind allowed', () => {
