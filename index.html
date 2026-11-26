@@ -1807,7 +1807,7 @@ async function openAdmin(tab,keep){
     if(admTab==='acc'){admCache.acc=await rpc('admin_accounts',{p_token:tok()})||[];return admAccounts()}
     if(admTab==='acct')return admDetail(await rpc('admin_account_detail',{p_token:tok(),p_id:admAcct}));
     if(admTab==='codes')return admCodes(await rpc('admin_codes',{p_token:tok()})||[]);
-    if(admTab==='msgs'){admCache.msgs=await rpc('admin_messages',{p_token:tok()})||[];admCache.help=await rpc('admin_help_stats',{p_token:tok()}).catch(()=>null);return admMsgs()}
+    if(admTab==='msgs'){admCache.msgs=await rpc('admin_messages',{p_token:tok()})||[];admCache.help=(window.DarHelp&&DarHelp.sendEnabled)?await rpc('admin_help_stats',{p_token:tok()}).catch(()=>null):null;return admMsgs()}
     if(admTab==='pays'){admCache.pays=await rpc('admin_payments',{p_token:tok()})||[];admCache.acc=admCache.acc||await rpc('admin_accounts',{p_token:tok()})||[];return admPays()}
   }catch(e){$('#admBody').innerHTML=`<div class="note">${errT(e)}</div>`}
 }

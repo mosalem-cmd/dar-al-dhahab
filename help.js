@@ -9,6 +9,11 @@
   // تُترك فارغة حتى يضعها صاحب التطبيق؛ عند فراغها يظهر بديل داخل التطبيق.
   const ADMIN_CONTACT = { whatsapp: '', email: '' };
 
+  // ===== إرسال طلبات المساعدة للمشرفين (المرحلة 2): موقوف =====
+  // ما دام false لا تتصل المساعدة بأي خادم: «المشكلة مستمرة» والنص الحر يعرضان قناة التواصل فقط.
+  // لا يُفعَّل إلا بموافقة صاحب التطبيق.
+  const HELP_SEND_ENABLED = false;
+
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ===== نصوص الواجهة =====
@@ -277,7 +282,7 @@
       `<p class="hq">${U.did}</p><div class="hact"><button type="button" class="pri" data-hok="${p.id}">${U.solved}</button><button type="button" data-hno="${p.id}">${U.persist}</button></div>`);
   }
   // المرحلة 2: من له جلسة يُرسَل طلبه للمشرفين (help_request في 4_help_requests.sql)؛ بلا جلسة لا إرسال، فقط قناة التواصل
-  const canSend = () => { try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
+  const canSend = () => { if (!HELP_SEND_ENABLED) return false; try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
   async function helpSubmit(ticket) {
     const l = cur(), U = UI[l], more = `<div class="hact"><button type="button" data-hmenu>${U.more}</button></div>`;
     const lead = `<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>`;
@@ -335,7 +340,7 @@
     upd();
   }
 
-  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, open: openChat,
+  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, open: openChat,
     title: (id, l) => { const p = HELP.find(x => x.id === id); return p ? p.t[l === 'fr' ? 'fr' : 'ar'] : (id === 'free' || !id ? (l === 'fr' ? 'Texte libre' : 'نص حر') : id); } };
   if (typeof document !== 'undefined') init();
 })(typeof window !== 'undefined' ? window : globalThis);
