@@ -40,3 +40,17 @@ test('in-app guide has no outdated statements', () => {
     'Cochez « Compte réglé »', 'Le bouton rond en bas ouvre', 'La suppression est définitive', 'Sur cet appareil uniquement', 'ventes, frais par ligne'])
     assert.ok(!guide.includes(stale), 'outdated guide text: ' + stale);
 });
+
+// v2.6.2: تغيير رقم الدخول: الدالة محمية والواجهة تستدعيها لحساب المطحنة فقط
+test('change login phone: guarded SQL function and a mill-only settings page', () => {
+  const sql = read('6_change_phone.sql');
+  assert.match(sql, /change_phone\(p_token text, p_pass text, p_new_phone text\)[\s\S]*public\._acct\(p_token\)/);
+  assert.match(sql, /a\.role <> 'mill' then raise exception 'E_ADMIN_PHONE'/, 'admins excluded');
+  assert.match(sql, /extensions\.crypt\(coalesce\(p_pass,''\), a\.pass_hash\)/, 'current password checked');
+  assert.match(sql, /public\.admin_phones where phone = ph/, 'admin numbers reserved');
+  assert.match(sql, /delete from public\.sessions where account_id = a\.id and token <> p_token/, 'other devices signed out');
+  assert.match(sql, /security definer set search_path to ''/);
+  const html = read('index.html');
+  assert.match(html, /function openPhone\(keep\)[\s\S]*rpc\('change_phone'/);
+  assert.match(html, /sess\.me\.role!=='admin'\?`<button data-go="phone">/, 'button hidden for admins');
+});
