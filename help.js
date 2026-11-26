@@ -340,7 +340,7 @@
     upd();
   }
 
-  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, open: openChat,
+  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, open: openChat, close: closeChat,
     title: (id, l) => { const p = HELP.find(x => x.id === id); return p ? p.t[l === 'fr' ? 'fr' : 'ar'] : (id === 'free' || !id ? (l === 'fr' ? 'Texte libre' : 'نص حر') : id); } };
   if (typeof document !== 'undefined') init();
 })(typeof window !== 'undefined' ? window : globalThis);

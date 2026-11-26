@@ -54,3 +54,12 @@ test('change login phone: guarded SQL function and a mill-only settings page', (
   assert.match(html, /function openPhone\(keep\)[\s\S]*rpc\('change_phone'/);
   assert.match(html, /sess\.me\.role!=='admin'\?`<button data-go="phone">/, 'button hidden for admins');
 });
+
+// v2.6.3: زر الرجوع في الهاتف يمر بنفس منطق زر الرجوع داخل التطبيق (ومنه تنبيه الفاتورة غير المحفوظة)
+test('phone back button is bridged to the in-app back logic', () => {
+  const html = read('index.html');
+  assert.match(html, /window\.addEventListener\('popstate',[\s\S]{0,200}goBack\(\)/, 'popstate must call goBack');
+  assert.match(html, /function show\(v,keep\)\{[\s\S]*?syncBackEntry\(\);\n\}/, 'show() keeps the history entry in sync');
+  assert.match(html, /const isRootView=v=>v==='home'\|\|v==='wel'/, 'home/login stay the exit point');
+  assert.match(read('help.js'), /close: closeChat/, 'help chat can be closed by the back button');
+});

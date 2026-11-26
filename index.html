@@ -639,7 +639,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.2';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.3';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -779,6 +779,7 @@ function show(v,keep){
   const mk={home:'home',list:'list',form:'new',cust:'cust',prof:'cust',cform:'cust',rep:'rep',exp:'exp',set:'set',priv:'privacy',del:'del',msgs:'set',pays:'set',pwd:'set',phone:'set',adm:'set'}[v];
   document.querySelectorAll('#drawer a,#tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===mk));
   if(!keep)window.scrollTo(0,0);
+  syncBackEntry();
 }
 function openMenu(){$('#drawer').classList.remove('hide');$('#btnMenu').setAttribute('aria-expanded','true')}
 function closeMenu(){$('#drawer').classList.add('hide');$('#btnMenu').setAttribute('aria-expanded','false')}
@@ -820,6 +821,31 @@ function goBackRaw(){
   go(to==='prof'?'cust':to);
 }
 $('#btnBack').onclick=goBack;
+/* ---------- زر الرجوع في الهاتف (أندرويد) يعمل مثل زر الرجوع داخل التطبيق ----------
+   ما دام المستخدم خارج الرئيسية (أو فوقه نافذة مفتوحة) نُبقي خطوة واحدة في سجل المتصفح،
+   فيلتقط التطبيق ضغطة الرجوع: يغلق النافذة المفتوحة أو يرجع للصفحة الأم. في الرئيسية يخرج من التطبيق كالمعتاد. */
+let ignorePop=false;
+const isRootView=v=>v==='home'||v==='wel';
+const dynSheets=()=>[...document.querySelectorAll('.sheet:not(#sheet)')];
+const sheetOpen=()=>dynSheets().length>0||!$('#sheet').classList.contains('hide');
+function syncBackEntry(){
+  try{const has=!!(history.state&&history.state.dar),need=!isRootView(view)||sheetOpen();
+    if(need&&!has)history.pushState({dar:1},'');
+    else if(!need&&has){ignorePop=true;history.back()}}catch(e){}
+}
+function closeTopSheet(){
+  const d=dynSheets();
+  if(d.length){const s=d[d.length-1];if(s.classList.contains('helpw')&&window.DarHelp&&DarHelp.close)DarHelp.close();else s.remove();return true}
+  if(!$('#sheet').classList.contains('hide')){$('#sheet').classList.add('hide');return true}
+  return false;
+}
+window.addEventListener('popstate',()=>{
+  if(ignorePop){ignorePop=false;return}
+  if(!closeTopSheet()&&!isRootView(view))goBack();   // goBack يسأل عن الفاتورة غير المحفوظة عند الحاجة
+  setTimeout(syncBackEntry,0);
+});
+new MutationObserver(()=>setTimeout(syncBackEntry,0)).observe(document.body,{childList:true});
+new MutationObserver(()=>setTimeout(syncBackEntry,0)).observe($('#sheet'),{attributes:true,attributeFilter:['class']});
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(g.dataset.go)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 
