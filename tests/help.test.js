@@ -101,7 +101,7 @@ test('phase 2 SQL: session required, rate-limited, help kind allowed', () => {
 test('service worker caches help.js', () => {
   const sw = read('sw.js');
   assert.match(sw, /'\.\/help\.js'/);
-  assert.match(sw, /const VERSION='dar-v2\.6\.0'/);
+  assert.match(sw, /const VERSION='dar-v2\.6\.1'/);
 });
 
 test('dark-mode logo: transparent version used in dark mode only, phone icon unchanged', () => {

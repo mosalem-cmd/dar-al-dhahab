@@ -638,7 +638,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.0';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.1';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -1227,22 +1227,22 @@ ar:{tag:'دفتر فواتير رقمي لمطاحن الذهب: الطحن وا
   ['🧮','تسجيل التكاليف','في جدول التكاليف اكتب لكل بند العدد وسعر الفرد، فيُحسب الإجمالي ومجموع التكاليف فورا.',['البنود الجاهزة: الطحن، التصفية، النقل، إنزال المتاع، نقل العمال، المؤونة، الخطوط.','زر «إضافة بند» لأي تكلفة أخرى، ويمكن تغيير اسم أي بند.','إذا تركت العدد فارغا يُحسب واحدا.'],null],
   ['🥇','بيع الذهب وسعر الغرام','اكتب عدد الغرامات وسعر الغرام لهذا الزبون، لأن السعر يختلف من شخص لآخر.',['لا تُحفظ الفاتورة إذا كتبت الغرامات بلا سعر.','سجّل مكتب الشراء ورقم وصل البيع لتسهيل المراجعة.'],null],
   ['📐','النتيجة وتقسيم النسب','النتيجة النهائية = بيع الذهب − مجموع التكاليف.',['وزّع النسب على الشركاء: صاحب الحاسي، المقاول، مرتو بيكير، أكرب، المشرف، العمال.','يظهر مبلغ كل شريك فورا، ويظهر المجموع بالأحمر إذا لم يكن 100%.'],null],
-  ['💾','الحفظ والتسديد','ضع علامة «الحساب مسدَّد» عند تسوية الحساب، وأضف ملاحظة إن أردت، ثم اضغط «حفظ الفاتورة».',['الفاتورة غير المسدَّدة تظهر بشريط أحمر في القائمة.','لتعديل فاتورة: افتح القائمة واضغط «تعديل».'],'list','افتح الفواتير'],
+  ['💾','الحفظ والتسديد','اكتب ما سدّده الزبون في «تم تسديد مبلغ» (أو اضغط «تسديد الكل»)، فيظهر «المتبقي» من التكاليف، ثم اضغط «حفظ الفاتورة».',['الفاتورة غير المسدَّدة تظهر بعلامة «غير مسدَّد» في القائمة مع المتبقي.','لتعديل فاتورة: افتح القائمة واضغط «تعديل».'],'list','افتح الفواتير'],
   ['📲','المشاركة على واتساب','زر «📷 صورة» يحوّل الفاتورة إلى صورة مرتبة بشكل الفاتورة الورقية، فتختار واتساب وترسلها للزبون.',['زر «نسخ» يعطيك ملخصا نصيا للصقه في رسالة.','__PRINT__'],null],
   ['👥','ملفات الزبائن','يُحفظ كل زبون تلقائيا عند أول فاتورة، أو أضفه بزر «زبون جديد». ملف الزبون فيه معلوماته الأساسية وكل فواتيره السابقة وإجمالياته.',['أيقونة 🧾+ بجانب أي زبون تفتح له فاتورة جديدة معبّأة ببياناته.','اضغط أي فاتورة في سجله لفتحها كما حُفظت.'],'cust','افتح الزبائن'],
-  ['📊','الإجماليات','اختر الفترة (هذا الشهر، الشهر الماضي، السنة، أو فترة مخصصة) لترى الغرامات، والمبيعات، والتكاليف حسب كل بند، وصافي النتائج، وحصص الشركاء، وأكثر الزبائن، وغير المسدَّد.',[],'rep','افتح الإجماليات'],
-  ['✍️','الملاحظات','الزر الدائري في أسفل الشاشة يفتح دفتر ملاحظات: اكتب أي ملاحظة فتُحفظ مرقّمة بالتاريخ والساعة.',[],'notes','افتح الملاحظات'],
+  ['📊','لوحة المتابعة','اختر الفترة (هذا الشهر، الشهر الماضي، السنة، أو الكل) لترى أرقام المطحنة: المداخيل (التكاليف المفوترة)، والصافي بعد مصاريف المطحنة، والغرامات، والتكاليف حسب كل بند، وأكثر الزبائن، وغير المسدَّد.',[],'rep','افتح اللوحة'],
+  ['✍️','الملاحظات','زر القلم في أعلى الشاشة يفتح دفتر ملاحظات: اكتب أي ملاحظة فتُحفظ مرقّمة بالتاريخ والساعة.',[],'notes','افتح الملاحظات'],
   ['__BK__']
  ],
- bkLocal:['🛟','النسخ الاحتياطي (مهم)','البيانات محفوظة على هذا الجهاز. من الإعدادات احفظ نسخة احتياطية كل أسبوع وأرسلها لنفسك، واستعدها إذا ضاع الهاتف.',[],'set','افتح الإعدادات'],
+ bkLocal:['🛟','أين تُحفظ بياناتك','تُحفظ في هاتفك وعلى حسابك في الخادم تلقائيًا. ويمكنك أيضًا حفظ نسخة على هاتفك من «الإعدادات ← حفظ نسخة على هاتفي».',[],'set','افتح الإعدادات'],
  bkHosted:['🔐','المشاركة مع فريقك','البيانات محفوظة في السحابة. يمكن لصاحب الصفحة مشاركتها مع المحاسب أو العامل ليُدخلوا الفواتير، بينما تبقى الإعدادات بيد صاحبها.',[],null],
  printLine:'زر «🖨️ طباعة» يطبع الفاتورة بنفس الشكل.',
  feats:'ما الذي يقدمه التطبيق؟',
- fl:[['حساب تلقائي','لا آلة حاسبة ولا أخطاء جمع.'],['عربي وفرنسي','زر واحد يبدّل اللغة.'],['وضع داكن','مريح للعين ليلا.'],['سريع وخفيف','يعمل على الهواتف البسيطة.'],['بحث فوري','بالاسم أو الهاتف أو الرقم.'],['آمن','لا يحذف شيئا دون تأكيد.']],
+ fl:[['حساب تلقائي','لا آلة حاسبة ولا أخطاء جمع.'],['عربي وفرنسي','تبدّل اللغة من الإعدادات.'],['وضع داكن','مريح للعين ليلا، من الإعدادات.'],['سريع وخفيف','يعمل على الهواتف البسيطة.'],['بحث فوري','بالاسم أو الهاتف أو الرقم.'],['آمن','لا يحذف شيئا دون تأكيد.']],
  faq:'أسئلة شائعة',
- qa:[['أين تُحفظ البيانات؟','__WHERE__'],['كيف أعدّل فاتورة أو أغيّر رقمها؟','افتح الفواتير، اضغط «تعديل»، غيّر ما تريد ثم احفظ. إذا غيّرت الرقم تُنقل الفاتورة إلى الرقم الجديد بشرط ألا يكون مستعملا.'],['لماذا يظهر مجموع النسب بالأحمر؟','لأن مجموع النسب ليس 100%. يمكنك الحفظ، لكن راجع النسب حتى يُوزَّع المبلغ كاملا.'],['هل يمكن حذف فاتورة؟','نعم من القائمة بزر «حذف» ثم «تأكيد الحذف». الحذف نهائي.'],['هل يعمل بدون إنترنت؟','__OFF__']],
- whereL:'على هذا الجهاز فقط. لذلك احفظ نسخة احتياطية من الإعدادات بانتظام.',whereH:'في قاعدة بيانات سحابية، فلا تضيع عند تغيير الهاتف، وتظهر لكل من شاركت معه الصفحة.',
- offL:'نعم، بعد فتحه أول مرة يعمل ويحفظ بلا إنترنت. تحتاج الإنترنت فقط لإرسال الصور.',offH:'يحتاج اتصالا بالإنترنت للحفظ والتحميل.',
+ qa:[['أين تُحفظ البيانات؟','__WHERE__'],['كيف أعدّل فاتورة أو أغيّر رقمها؟','افتح الفواتير، اضغط «تعديل»، غيّر ما تريد ثم احفظ. إذا غيّرت الرقم تُنقل الفاتورة إلى الرقم الجديد بشرط ألا يكون مستعملا.'],['لماذا يظهر مجموع النسب بالأحمر؟','لأن مجموع النسب ليس 100%. يمكنك الحفظ، لكن راجع النسب حتى يُوزَّع المبلغ كاملا.'],['هل يمكن حذف فاتورة؟','لا تُحذف نهائيًا: زر «إلغاء» في القائمة يخرجها من كل المجاميع، ويمكن استرجاعها من «إظهار الفواتير الملغاة».'],['هل يعمل بدون إنترنت؟','__OFF__']],
+ whereL:'في هاتفك أولًا، ثم تُرفع تلقائيًا إلى حسابك على الخادم عند الاتصال، فلا تضيع عند تغيير الهاتف: سجّل الدخول بنفس الرقم.',whereH:'في قاعدة بيانات سحابية، فلا تضيع عند تغيير الهاتف، وتظهر لكل من شاركت معه الصفحة.',
+ offL:'نعم، يعمل ويحفظ في الهاتف بلا إنترنت، وتُرفع البيانات تلقائيًا عند عودة الاتصال. تسجيل الدخول وإنشاء الحساب يحتاجان إنترنت.',offH:'يحتاج اتصالا بالإنترنت للحفظ والتحميل.',
  foot:'جميع الحقوق محفوظة'},
 fr:{tag:'Registre numérique pour moulins à or : broyage, vente et partage entre associés. Fonctionne sur votre téléphone même hors ligne, avec une copie sécurisée sur votre compte.',start:'➕ Nouvelle facture',open:'🧾 Factures',
  qs:'Aperçu',inv:'facture(s)',cust:'client(s)',unp:'non réglée(s)',monthNet:'Bénéfice du moulin ce mois',paidM:'Réglé ce mois',remM:'Reste ce mois',
@@ -1255,22 +1255,22 @@ fr:{tag:'Registre numérique pour moulins à or : broyage, vente et partage entr
   ['🧮','Saisir les frais','Pour chaque ligne, saisissez la quantité et le prix unitaire : le total se calcule immédiatement.',['Lignes prêtes : broyage, filtrage, transport, déchargement, transport des ouvriers, provisions, lignes.','« Ajouter une ligne » pour tout autre frais ; chaque nom est modifiable.','Quantité vide = 1.'],null],
   ['🥇','Vente d\'or et prix du gramme','Saisissez les grammes et le prix du gramme pour ce client, car il varie d\'une personne à l\'autre.',['La facture n\'est pas enregistrée si les grammes sont saisis sans prix.','Notez le comptoir d\'achat et le n° du reçu de vente.'],null],
   ['📐','Résultat et pourcentages','Résultat final = vente d\'or − total des frais.',['Répartissez les pourcentages entre les associés.','Le montant de chacun s\'affiche ; le total devient rouge s\'il n\'est pas 100 %.'],null],
-  ['💾','Enregistrer et régler','Cochez « Compte réglé » une fois le compte soldé, ajoutez une remarque, puis « Enregistrer ».',['Les factures non réglées sont signalées en rouge.','Pour modifier : ouvrez la liste et appuyez sur « Modifier ».'],'list','Ouvrir les factures'],
+  ['💾','Enregistrer et régler','Saisissez ce que le client a réglé dans « Montant réglé » (ou « Tout régler ») : le « Reste » des frais s’affiche, puis « Enregistrer ».',['Les factures non réglées portent l’étiquette « Non réglé » avec le reste.','Pour modifier : ouvrez la liste et appuyez sur « Modifier ».'],'list','Ouvrir les factures'],
   ['📲','Partager sur WhatsApp','« 📷 Image » transforme la facture en image fidèle à la facture papier ; choisissez WhatsApp.',['« Copier » donne un résumé texte.','__PRINT__'],null],
   ['👥','Fiches clients','Chaque client est enregistré automatiquement à sa première facture, ou via « Nouveau client ». La fiche contient ses informations, toutes ses factures et ses totaux.',['L\'icône 🧾+ ouvre une nouvelle facture pré-remplie pour ce client.','Touchez une facture de l\'historique pour l\'ouvrir.'],'cust','Ouvrir les clients'],
-  ['📊','Totaux','Choisissez la période (ce mois, mois dernier, année ou période libre) : grammes, ventes, frais par ligne, résultat net, parts des associés, meilleurs clients, impayés.',[],'rep','Ouvrir les totaux'],
-  ['✍️','Notes','Le bouton rond en bas ouvre un carnet de notes numérotées avec date et heure.',[],'notes','Ouvrir les notes'],
+  ['📊','Tableau de bord','Choisissez la période (ce mois, mois dernier, année ou tout) pour voir les chiffres du moulin : recettes (frais facturés), net après dépenses du moulin, grammes, frais par ligne, meilleurs clients, impayés.',[],'rep','Ouvrir le tableau'],
+  ['✍️','Notes','Le bouton stylo en haut de l’écran ouvre un carnet de notes numérotées avec date et heure.',[],'notes','Ouvrir les notes'],
   ['__BK__']
  ],
- bkLocal:['🛟','Sauvegarde (important)','Les données sont sur cet appareil. Faites une sauvegarde chaque semaine depuis les paramètres et envoyez-la-vous.',[],'set','Ouvrir les paramètres'],
+ bkLocal:['🛟','Où sont vos données','Sur votre téléphone et automatiquement sur votre compte du serveur. Vous pouvez aussi garder une copie : « Paramètres → Enregistrer une copie sur mon téléphone ».',[],'set','Ouvrir les paramètres'],
  bkHosted:['🔐','Partager avec votre équipe','Les données sont dans le cloud. Le propriétaire peut partager la page avec le comptable ou les ouvriers ; les paramètres restent à lui.',[],null],
  printLine:'« 🖨️ Imprimer » imprime la facture au même format.',
  feats:'Ce que propose l\'application',
- fl:[['Calcul automatique','Ni calculatrice ni erreurs.'],['Arabe et français','Un bouton change la langue.'],['Mode sombre','Confortable la nuit.'],['Rapide et léger','Fonctionne sur les petits téléphones.'],['Recherche instantanée','Nom, téléphone ou numéro.'],['Sûr','Rien n\'est supprimé sans confirmation.']],
+ fl:[['Calcul automatique','Ni calculatrice ni erreurs.'],['Arabe et français','La langue se change dans les paramètres.'],['Mode sombre','Confortable la nuit, dans les paramètres.'],['Rapide et léger','Fonctionne sur les petits téléphones.'],['Recherche instantanée','Nom, téléphone ou numéro.'],['Sûr','Rien n\'est supprimé sans confirmation.']],
  faq:'Questions fréquentes',
- qa:[['Où sont enregistrées les données ?','__WHERE__'],['Comment modifier une facture ou son numéro ?','Ouvrez les factures, « Modifier », changez puis enregistrez. Un nouveau numéro déplace la facture s\'il est libre.'],['Pourquoi le total des pourcentages est rouge ?','Parce qu\'il n\'est pas égal à 100 %. Vérifiez la répartition.'],['Peut-on supprimer une facture ?','Oui, « Supprimer » puis « Confirmer ». La suppression est définitive.'],['Fonctionne-t-il sans Internet ?','__OFF__']],
- whereL:'Sur cet appareil uniquement : faites des sauvegardes régulières.',whereH:'Dans une base de données cloud : rien ne se perd en changeant de téléphone.',
- offL:'Oui, après la première ouverture il fonctionne et enregistre hors ligne.',offH:'Une connexion Internet est nécessaire pour enregistrer et charger.',
+ qa:[['Où sont enregistrées les données ?','__WHERE__'],['Comment modifier une facture ou son numéro ?','Ouvrez les factures, « Modifier », changez puis enregistrez. Un nouveau numéro déplace la facture s\'il est libre.'],['Pourquoi le total des pourcentages est rouge ?','Parce qu\'il n\'est pas égal à 100 %. Vérifiez la répartition.'],['Peut-on supprimer une facture ?','Elle n’est pas supprimée : « Annuler » la retire de tous les totaux, et « Afficher les factures annulées » permet de la restaurer.'],['Fonctionne-t-il sans Internet ?','__OFF__']],
+ whereL:'D’abord sur votre téléphone, puis envoyées automatiquement à votre compte du serveur : rien ne se perd en changeant de téléphone (connectez-vous avec le même numéro).',whereH:'Dans une base de données cloud : rien ne se perd en changeant de téléphone.',
+ offL:'Oui, il fonctionne et enregistre sur le téléphone hors ligne ; l’envoi se fait automatiquement au retour du réseau. La connexion et l’inscription nécessitent Internet.',offH:'Une connexion Internet est nécessaire pour enregistrer et charger.',
  foot:'Tous droits réservés'}};
 function openHome(keep){
   const H=HOME[lang], L=!!window.__local, ym=today().slice(0,7);

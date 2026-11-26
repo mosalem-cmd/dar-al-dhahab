@@ -88,7 +88,8 @@
     ] },
     { id: 'invShow', cat: 'inv', t: { ar: 'الفاتورة لا تظهر في القائمة', fr: 'La facture n’apparaît pas dans la liste' }, steps: [
       { ar: 'امسح نص البحث في أعلى «الفواتير».', fr: 'Effacez le texte de recherche en haut de « Factures ».', img: ['list', 'search'] },
-      { ar: 'ألغِ «غير المسدَّدة فقط»، وامسح «تصفية بالتاريخ».', fr: 'Décochez « Non réglées seulement » et effacez « Filtrer par date ».', img: ['list', 'unpaid'] },
+      { ar: 'ألغِ «غير المسدَّدة فقط».', fr: 'Décochez « Non réglées seulement ».', img: ['list', 'unpaid'] },
+      { ar: 'إن كان زر التقويم بجانب البحث مفعّلًا فافتحه واضغط «مسح» لإلغاء تصفية التاريخ.', fr: 'Si le bouton calendrier à côté de la recherche est actif, ouvrez-le et touchez « Effacer ».', img: ['list', 'date'] },
       { ar: 'الفواتير الملغاة مخفية: فعّل «إظهار الفواتير الملغاة».', fr: 'Les factures annulées sont masquées : cochez « Afficher les factures annulées ».', img: ['list', 'canc'] },
       { ar: 'إن أنشأتها من هاتف آخر: اتصل بالإنترنت وانتظر حتى تصبح النقطة في الرأس خضراء.', fr: 'Créée sur un autre téléphone ? Connectez-vous à Internet et attendez que le point de l’en-tête devienne vert.', img: ['header', 'dot'] }
     ] },
@@ -167,7 +168,7 @@
       h: { code: [20, 281, 220, 28, 1], tabLogin: [24, 84, 104, 26] } }),
     settings: (k, L) => ({ b: k.header(L) + k.T(L.settings, 16, 86, 15, 'var(--ink)', 700) +
       k.R(12, 96, 236, 104, 'var(--card)', 'var(--line)', 14) + k.T(L.profile, 24, 116, 11, 'var(--ink)', 700) + k.field(24, 128, 212, L.name, L.mill) + k.R(24, 172, 100, 20, 'var(--inp)', 'var(--line)', 7) + k.T('22 00 00 00', 30, 186, 9) +
-      k.R(12, 210, 236, 150, 'var(--card)', 'var(--line)', 14) + k.btn(24, 222, 212, L.pays, 0, 28) + k.btn(24, 258, 212, L.pwd, 0, 28) + k.btn(24, 294, 212, L.msgs, 0, 28) + k.T(L.version + ' 2.5.0', 130, 346, 10, 'var(--mut)', 400, 1) + k.tabbar(L, 5),
+      k.R(12, 210, 236, 150, 'var(--card)', 'var(--line)', 14) + k.btn(24, 222, 212, L.pays, 0, 28) + k.btn(24, 258, 212, L.pwd, 0, 28) + k.btn(24, 294, 212, L.msgs, 0, 28) + k.T(L.version + ' ' + (typeof VER !== 'undefined' ? VER : '2.6.1'), 130, 346, 10, 'var(--mut)', 400, 1) + k.tabbar(L, 5),
       h: { profile: [12, 96, 236, 104], pays: [24, 222, 212, 28], pwd: [24, 258, 212, 28], msgs: [24, 294, 212, 28], version: [70, 334, 120, 18, 1] } }),
     pays: (k, L) => ({ b: k.header(L) + k.T(L.pays, 16, 86, 15, 'var(--ink)', 700) + k.R(12, 98, 236, 230, 'var(--card)', 'var(--line)', 14) +
       k.field(24, 116, 212, L.amount, '5,000') + k.field(24, 164, 212, L.method, L.transfer) + k.field(24, 212, 212, L.ref, 'XXXX-XXXX') + k.btn(24, 270, 212, L.addPay, 1, 36) + k.tabbar(L, 5),
@@ -181,11 +182,11 @@
       k.R(24, 174, 212, 70, 'none', 'var(--line)', 6) + k.T(L.costs, 32, 196, 10, 'var(--mut)') + k.T('40,000', 228, 196, 10, 'var(--ink)', 700, 2) + k.T(L.net, 32, 226, 10, 'var(--mut)') + k.T('260,000', 228, 226, 10, 'var(--ink)', 700, 2) +
       k.R(12, 312, 236, 76, 'var(--card)', 'var(--line)', 18) + k.btn(22, 336, 44, L.image, 0, 32) + k.btn(72, 336, 44, L.copy, 0, 32) + k.btn(124, 336, 114, L.save, 1, 32) + k.tabbar(L, 3),
       h: { no: [150, 78, 86, 22], price: [130, 142, 106, 20], image: [22, 336, 44, 32, 1], save: [124, 336, 114, 32, 1] } }),
-    list: (k, L) => ({ b: k.header(L) + k.R(12, 72, 236, 30, 'var(--inp)', 'var(--line)', 12) + k.T(L.search, 26, 91, 8.5, 'var(--mut)') +
-      k.btn(12, 110, 110, L.dateF, 0, 26) + k.R(12, 146, 14, 14, 'var(--inp)', 'var(--line)', 3) + k.T(L.unpaid, 32, 157, 10) + k.R(12, 170, 14, 14, 'var(--inp)', 'var(--line)', 3) + k.T(L.canc, 32, 181, 10) +
+    list: (k, L) => ({ b: k.header(L) + k.R(12, 72, 192, 30, 'var(--inp)', 'var(--line)', 12) + k.T(L.search, 22, 91, 7.5, 'var(--mut)') +
+      k.R(212, 72, 36, 30, 'var(--card)', 'var(--line)', 10) + k.R(221, 80, 18, 15, 'none', 'var(--ink)', 3) + k.R(221, 80, 18, 4, 'var(--ink)', 'none', 1) + k.R(12, 146, 14, 14, 'var(--inp)', 'var(--line)', 3) + k.T(L.unpaid, 32, 157, 10) + k.R(12, 170, 14, 14, 'var(--inp)', 'var(--line)', 3) + k.T(L.canc, 32, 181, 10) +
       k.R(12, 198, 236, 70, 'var(--card)', 'var(--line)', 14) + k.T('N° 0000002', 24, 220, 11, 'var(--ink)', 700) + k.R(150, 208, 86, 18, 'var(--gold-l)', 'none', 9) + k.T(L.badge, 193, 221, 9, 'var(--ink)', 600, 1) + k.T(L.client + ' 1', 24, 246, 10, 'var(--mut)') +
       k.R(12, 276, 236, 70, 'var(--card)', 'var(--line)', 14) + k.T('N° 0000001', 24, 298, 11, 'var(--ink)', 700) + k.T(L.client + ' 2', 24, 324, 10, 'var(--mut)') + k.tabbar(L, 1),
-      h: { search: [12, 72, 236, 30], date: [12, 110, 110, 26], unpaid: [10, 144, 170, 18], canc: [10, 168, 190, 18] } }),
+      h: { search: [12, 72, 192, 30], date: [212, 72, 36, 30], unpaid: [10, 144, 170, 18], canc: [10, 168, 190, 18] } }),
     share: (k, L) => ({ b: k.header(L) + k.R(30, 72, 200, 160, 'var(--paper)', 'var(--line)', 6) + k.R(50, 92, 160, 10, 'var(--line)', 'none', 4) + k.R(50, 112, 120, 8, 'var(--line)', 'none', 4) + k.R(50, 130, 160, 70, 'none', 'var(--line)', 4) +
       `<rect x="1" y="60" width="${W - 2}" height="${H - 61}" fill="#000" opacity=".35"/>` + k.R(1, 268, W - 2, 191, 'var(--card)', 'none', 20) +
       k.C(54, 316, 22, '#25d366') + k.T(L.wa, 54, 356, 9.5, 'var(--ink)', 600, 1) + k.C(130, 316, 22, 'var(--gold-l)') + `<path d="M${130 - 7} 312l7 8 7-8M130 304v15M121 326h18" stroke="var(--ink)" stroke-width="2.4" fill="none" stroke-linecap="round" transform="translate(${0},0)"/>` + k.T(L.saveImg, 130, 356, 9.5, 'var(--ink)', 600, 1) +

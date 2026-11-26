@@ -31,3 +31,12 @@ test('aggregate pages never show customer gold totals or net', () => {
   const adm = html.slice(html.indexOf('const ncust='), html.indexOf("t('recentInv')") + 600);
   assert.doesNotMatch(adm, /i\.net|\bnet=/, 'admin detail shows customer net');
 });
+
+// v2.6.1: دليل الاستخدام يطابق سلوك التطبيق الحالي (لا عبارات قديمة متناقضة)
+test('in-app guide has no outdated statements', () => {
+  const html = read('index.html');
+  const guide = html.slice(html.indexOf('const HOME={'), html.indexOf('};', html.indexOf('const HOME={')));
+  for (const stale of ['ضع علامة «الحساب مسدَّد»', 'الزر الدائري في أسفل الشاشة يفتح دفتر', 'الحذف نهائي', 'على هذا الجهاز فقط', 'والمبيعات، والتكاليف', 'وحصص الشركاء',
+    'Cochez « Compte réglé »', 'Le bouton rond en bas ouvre', 'La suppression est définitive', 'Sur cet appareil uniquement', 'ventes, frais par ligne'])
+    assert.ok(!guide.includes(stale), 'outdated guide text: ' + stale);
+});
