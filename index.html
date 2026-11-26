@@ -824,14 +824,17 @@ $('#btnBack').onclick=goBack;
 /* ---------- زر الرجوع في الهاتف (أندرويد) يعمل مثل زر الرجوع داخل التطبيق ----------
    ما دام المستخدم خارج الرئيسية (أو فوقه نافذة مفتوحة) نُبقي خطوة واحدة في سجل المتصفح،
    فيلتقط التطبيق ضغطة الرجوع: يغلق النافذة المفتوحة أو يرجع للصفحة الأم. في الرئيسية يخرج من التطبيق كالمعتاد. */
-let ignorePop=false;
+let ignorePop=false,backPending=false;
 const isRootView=v=>v==='home'||v==='wel';
 const dynSheets=()=>[...document.querySelectorAll('.sheet:not(#sheet)')];
 const sheetOpen=()=>dynSheets().length>0||!$('#sheet').classList.contains('hide');
+// history.back() غير متزامن: بقاء history.state قبل وصول popstate جعل استدعاءين متتاليين يرجعان خطوتين فيخرج المستخدم من التطبيق.
+// لذلك لا يُطلب رجوع جديد ما دام السابق معلّقًا، وبعد وصوله نُوفّق الحالة مرة أخرى.
 function syncBackEntry(){
+  if(backPending)return;
   try{const has=!!(history.state&&history.state.dar),need=!isRootView(view)||sheetOpen();
     if(need&&!has)history.pushState({dar:1},'');
-    else if(!need&&has){ignorePop=true;history.back()}}catch(e){}
+    else if(!need&&has){backPending=true;ignorePop=true;history.back()}}catch(e){}
 }
 function closeTopSheet(){
   const d=dynSheets();
@@ -840,7 +843,7 @@ function closeTopSheet(){
   return false;
 }
 window.addEventListener('popstate',()=>{
-  if(ignorePop){ignorePop=false;return}
+  if(ignorePop){ignorePop=false;backPending=false;syncBackEntry();return}
   if(!closeTopSheet()&&!isRootView(view))goBack();   // goBack يسأل عن الفاتورة غير المحفوظة عند الحاجة
   setTimeout(syncBackEntry,0);
 });
