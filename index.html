@@ -850,7 +850,7 @@ const SKEL='<div class="skel" aria-hidden="true"><i class="sk t"></i><i class="s
 let navTok=0;
 // تكلفة بناء كل صفحة على هذا الجهاز (متوسط متحرك بالملّي ثانية): الصفحة السريعة تُبنى فورًا كما كانت، والبطيئة تظهر بهيكل أولًا.
 // القيم الابتدائية تقدير للصفحات الثقيلة بالطبيعة حتى تُقاس أول مرة.
-const NAV_FAST=40,navCost={list:100,cust:100,new:100,rep:60};
+const NAV_FAST=40,navCost={list:100,cust:100,new:100};   // اللوحة مخزَّنة فتبدأ مباشرة وتتعلم من قياسها
 function navRun(v){const t0=performance.now();NAV[v]();const d=performance.now()-t0;navCost[v]=navCost[v]==null?d:navCost[v]*.5+d*.5}
 function navTo(v){
   if((navCost[v]||0)<NAV_FAST){navRun(v);return}        // خفيفة على هذا الجهاز: بناء فوري بلا إطار إضافي
