@@ -357,6 +357,17 @@ button.pri,[data-theme=dark] button.pri{background:#2e0e02!important;color:#fff!
 .paper{background:#fff}
 .subx{background:#2e0e02!important;box-shadow:0 8px 22px rgba(46,14,2,.28)!important}
 :root{--pink:#2e0e02}
+/* ===== v2.6.4: رسم أسرع للقوائم الطويلة: لا تخطيط ولا رسم لما هو خارج الشاشة ===== */
+.card.inv{content-visibility:auto;contain-intrinsic-size:auto 330px}
+.card.cust{content-visibility:auto;contain-intrinsic-size:auto 110px}
+.hrow{content-visibility:auto;contain-intrinsic-size:auto 58px}
+#vHome .step,#vHome details,#vHome .feat,#vHome .foot{content-visibility:auto;contain-intrinsic-size:auto 130px}
+/* ===== v2.6.4: هيكل الصفحة أثناء بناء المحتوى ===== */
+.skel{display:grid;gap:12px;padding:8px 0}
+.sk{display:block;height:92px;border-radius:20px;background:linear-gradient(90deg,var(--line),var(--card),var(--line));background-size:200% 100%;animation:skm 1.2s linear infinite;opacity:.55}
+.sk.t{height:34px;width:55%}.sk.s{height:58px}
+@keyframes skm{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
 /* ===== v2.5.0: زر المساعدة ونافذة المحادثة (المنطق والمحتوى في help.js) ===== */
 :root{--hdr:#2e0e02;--hdr-ink:#fff;--pri:#2e0e02;--pri-ink:#fff;--hl:#e07b00}
 [data-theme=dark]{--hdr:#181b1f;--hdr-ink:#ece8df;--pri:#d8b56a;--pri-ink:#1b1408;--hl:#ffb020}
@@ -639,7 +650,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.3';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.6.4';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -760,9 +771,12 @@ function rerender(){if(view==='home')openHome(true);else if(view==='list')render
 
 /* ---------- navigation ---------- */
 let prevView='';
-function show(v,keep){
+const SECID=v=>'v'+(v==='cform'?'CForm':v[0].toUpperCase()+v.slice(1));
+function show(v,keep,shell){
   if(v!==view)prevView=view;
   view=v;
+  if(!shell)navTok++;                                   // أي عرض مباشر يلغي أي بناء مؤجّل
+  {const sc=document.getElementById(SECID(v));if(sc)sc.dataset.ready=shell?'0':'1'}
   $('#btnBack').classList.toggle('hide',v==='home'||v==='wel');
   $('#vHome').classList.toggle('hide',v!=='home');
   $('#vList').classList.toggle('hide',v!=='list');
@@ -805,11 +819,31 @@ function guardLeave(next){
 }
 function go(v){guardLeave(()=>goRaw(v))}
 function goRaw(v){closeMenu();
-  if(v==='privacy'){openPriv();return}if(needSetup){openWelcome();return}if(v==='del'){openDel();return}if(v==='msgs'){openMsgs();return}if(v==='pays'){openPays();return}if(v==='exp'&&!subBlocked()){openExp();return}if(v==='pwd'){openPwd();return}if(v==='phone'){openPhone();return}if(v==='adm'){openAdmin(admTab==='acct'?'ov':admTab);return}
-  if(subBlocked()&&['home','list','new','cust','rep','notes','exp'].includes(v)){openHome();return}
-  if(v==='home')openHome();else if(v==='list'){renderList();show('list')}else if(v==='new')openForm(null);
-  else if(v==='cust'){cq='';openCust()}else if(v==='rep')openRep();else if(v==='set')openSet();
-  else if(v==='notes')$('#fab').click();}
+  navTok++;
+  if(v==='privacy'){openPriv();return}if(needSetup){openWelcome();return}if(v==='del'){openDel();return}if(v==='msgs'){openMsgs();return}if(v==='pays'){openPays();return}if(v==='exp'&&!subBlocked()){navTo('exp');return}if(v==='pwd'){openPwd();return}if(v==='phone'){openPhone();return}if(v==='adm'){openAdmin(admTab==='acct'?'ov':admTab);return}
+  if(subBlocked()&&['home','list','new','cust','rep','notes','exp'].includes(v)){navTo('home');return}
+  if(v==='notes'){$('#fab').click();return}
+  if(NAV[v])navTo(v);}
+/* ---------- التنقل السريع: تظهر الصفحة فورًا بهيكل خفيف، ثم يُبنى محتواها في الإطار التالي ----------
+   آخر ضغطة هي التي تُنفَّذ: أي ضغطة جديدة (أو أي عرض مباشر) ترفع navTok فيُلغى البناء المؤجّل السابق. */
+const NAV={home:()=>openHome(),list:()=>{renderList();show('list')},new:()=>openForm(null),cust:()=>{cq='';openCust()},rep:()=>openRep(),set:()=>openSet(),exp:()=>openExp()};
+const NAVV={home:'home',list:'list',new:'form',cust:'cust',rep:'rep',set:'set',exp:'exp'};
+const SKEL='<div class="skel" aria-hidden="true"><i class="sk t"></i><i class="sk"></i><i class="sk"></i><i class="sk s"></i></div>';
+let navTok=0;
+// تكلفة بناء كل صفحة على هذا الجهاز (متوسط متحرك بالملّي ثانية): الصفحة السريعة تُبنى فورًا كما كانت، والبطيئة تظهر بهيكل أولًا.
+// القيم الابتدائية تقدير للصفحات الثقيلة بالطبيعة حتى تُقاس أول مرة.
+const NAV_FAST=40,navCost={list:100,cust:100,new:100,rep:60};
+function navRun(v){const t0=performance.now();NAV[v]();const d=performance.now()-t0;navCost[v]=navCost[v]==null?d:navCost[v]*.5+d*.5}
+function navTo(v){
+  if((navCost[v]||0)<NAV_FAST){navRun(v);return}        // خفيفة على هذا الجهاز: بناء فوري بلا إطار إضافي
+  const key=NAVV[v],sec=document.getElementById(SECID(key));
+  if(key==='form')clearDirty();                        // نموذج جديد: لا تعديلات معلّقة
+  sec.innerHTML=SKEL;
+  show(key,false,true);                                // يُظهر الصفحة ويظلّلها في الشريط فورًا
+  const my=++navTok;                                   // بعد show (الذي لا يرفع الرمز في وضع الهيكل)
+  if(key==='form')$('#bar').classList.add('hide');     // لا حفظ قبل بناء النموذج (وإلا حُفظ النموذج السابق)
+  requestAnimationFrame(()=>setTimeout(()=>{if(my!==navTok||sec.dataset.ready==='1')return;navRun(v)},0));
+}
 // زر الرجوع: يعود إلى الصفحة الأم (أو إلى الصفحة السابقة في النماذج)
 const BACKP={list:'home',set:'home',rep:'home',cust:'home',exp:'home',prof:'cust',msgs:'set',pays:'set',pwd:'set',phone:'set',adm:'set'};
 function goBack(){guardLeave(goBackRaw)}
@@ -1341,7 +1375,10 @@ const digits=v=>String(v||'').replace(/[٠-٩]/g,d=>AR.indexOf(d)).replace(/\D/g
 const ckey=(name,phone)=>digits(phone)?'p'+digits(phone):'n'+String(name||'').trim();
 const initial=n=>(String(n||'').trim()[0]||'?').toUpperCase();
 const BASIC=['regNo','regDate','listNo','serial'];
-function clients(){
+// نتيجة clients() تُخزَّن ما دام مصدراها (invoices وcustomers) لم يُستبدلا؛ تُحسب مرة لكل تغيّر في البيانات (كانت تُحسب في كل نقرة وكل ضغطة مفتاح)
+let _clK=null,_clI=null,_clC=null;
+function clients(){if(_clK&&_clI===invoices&&_clC===customers)return _clK;_clK=clientsCompute();_clI=invoices;_clC=customers;return _clK}
+function clientsCompute(){
   const m=new Map(), byId={};
   customers.forEach(c=>{const o={...c,key:ckey(c.name,c.phone),saved:true,invs:[],count:0,grams:0,gold:0,costs:0,net:0,unpaid:0,unpaidAmt:0,last:''};if(!m.has(o.key))m.set(o.key,o);byId[c.id]=o});
   [...invoices].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||a.no-b.no).forEach(i=>{
@@ -1489,7 +1526,14 @@ function chart(rows,cols){
   return o+'</svg>';
 }
 const bar=(v,max,neg)=>`<span class="barx"><i style="width:${max>0?Math.max(2,Math.round(Math.abs(v)/max*100)):0}%;${neg?'background:var(--bad)':''}"></i></span>`;
+let RC=null;   // آخر صفحة لوحة مبنية: تُعاد كما هي ما لم تتغير البيانات أو الفترة أو اللغة أو اليوم
+function bindRep(){
+  $('#vRep').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{repP=b.dataset.p;openRep()});
+  const rf=$('#rFrom'),rt=$('#rTo');if(rf){rf.onchange=()=>{repFrom=rf.value;openRep()};rt.onchange=()=>{repTo=rt.value;openRep()}}
+}
 function openRep(){
+  const rk=[repP,repFrom,repTo,lang,cur$(),today()].join('|');
+  if(RC&&RC.k===rk&&RC.i===invoices&&RC.e===expenses){$('#vRep').innerHTML=RC.h;bindRep();show('rep',view==='rep');return}
   const[a,b]=period();
   const list=invoices.filter(i=>{const d=i.date||'';return d>=a&&d<=b});
   const sum=f=>list.reduce((x,i)=>x+f(i),0);
@@ -1507,7 +1551,7 @@ function openRep(){
   const byDay=repP==='month'||repP==='last'||(repP==='custom'&&repFrom&&repTo&&(new Date(repTo)-new Date(repFrom))<=62*864e5);
   const ser=repSeries(list,expenses,byDay,a,b);
   const serE=Object.entries(ser).sort((x,y)=>x[0].localeCompare(y[0])).slice(-14);
-  $('#vRep').innerHTML=`<div class="phd"><h2>${tI('totals')}</h2></div>
+  const html=`<div class="phd"><h2>${tI('totals')}</h2></div>
    <div class="chips">${chips}</div>
    ${repP==='custom'?`<div class="card grid"><div><label>${tI('from')}</label><input type="date" id="rFrom" value="${esc(repFrom)}"></div><div><label>${tI('to')}</label><input type="date" id="rTo" value="${esc(repTo)}"></div></div>`:''}
    <div class="hero2"><div><small>${ic('trend')} ${t('netOf')} · ${t({month:'pMonth',last:'pLast',year:'pYear',all:'pAll',custom:'pCustom'}[repP])}</small><b dir="ltr" class="${RS.net<0?'neg':''}">${fmt(RS.net)} <i>${esc(cur$())}</i></b></div></div>
@@ -1524,8 +1568,8 @@ function openRep(){
    <div class="card"><h2>${t('chInc')}</h2>${chart(serE.map(([k,o])=>[k,[o.cost,o.exp]]),['#2f7a3e','#c0553f'])}<div class="lg2"><span><i style="background:#2f7a3e"></i>${t('income')}</span><span><i style="background:#c0553f"></i>${t('expShort')}</span></div></div>`:''}
    <div class="card"><h2>${tI('topCust')}</h2>${topC.length?topC.map((c,k)=>`<div class="hrow" data-ck="${esc(c.key)}"><div><b>${k+1}. ${esc(c.name)}</b></div><b dir="ltr"><bdi>${fmt(c.g)}</bdi> ${t('g')}</b></div>`).join(''):'<div class="m">—</div>'}</div>
    <div class="card"><h2>${tI('unpaidCnt')}: ${unp.length}</h2>${unp.map(i=>`<div class="hrow" data-open="${esc(i.no)}"><span>N° ${esc(pad(i.no))} · ${esc(i.client||t('noName'))}</span><b dir="ltr">${fmt(remOf(i))}</b></div>`).join('')}</div>`;
-  $('#vRep').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{repP=b.dataset.p;openRep()});
-  const rf=$('#rFrom'),rt=$('#rTo');if(rf){rf.onchange=()=>{repFrom=rf.value;openRep()};rt.onchange=()=>{repTo=rt.value;openRep()}}
+  RC={k:rk,i:invoices,e:expenses,h:html};
+  $('#vRep').innerHTML=html;bindRep();
   show('rep',view==='rep');
 }
 $('#vRep').addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){const i=allInvoices.find(x=>x.no===+o.dataset.open);if(i)openForm(JSON.parse(JSON.stringify(i)),true)}});

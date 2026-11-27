@@ -59,7 +59,7 @@ test('change login phone: guarded SQL function and a mill-only settings page', (
 test('phone back button is bridged to the in-app back logic', () => {
   const html = read('index.html');
   assert.match(html, /window\.addEventListener\('popstate',[\s\S]{0,200}goBack\(\)/, 'popstate must call goBack');
-  assert.match(html, /function show\(v,keep\)\{[\s\S]*?syncBackEntry\(\);\n\}/, 'show() keeps the history entry in sync');
+  assert.match(html, /function show\(v,keep(,shell)?\)\{[\s\S]*?syncBackEntry\(\);\n\}/, 'show() keeps the history entry in sync');
   assert.match(html, /const isRootView=v=>v==='home'\|\|v==='wel'/, 'home/login stay the exit point');
   assert.match(read('help.js'), /close: closeChat/, 'help chat can be closed by the back button');
 });
@@ -71,4 +71,18 @@ test('phone-back bridge never fires a second history.back() while one is pending
   assert.match(html, /function syncBackEntry\(\)\{\s*if\(backPending\)return;/, 'must skip while a back is pending');
   assert.match(html, /else if\(!need&&has\)\{backPending=true;ignorePop=true;history\.back\(\)\}/);
   assert.match(html, /if\(ignorePop\)\{ignorePop=false;backPending=false;syncBackEntry\(\);return\}/, 'pending cleared and state reconciled on popstate');
+});
+
+// v2.6.4: التنقل السريع: هيكل فوري للصفحة الثقيلة، وآخر ضغطة تُنفَّذ، وتخزين نتائج الحسابات الثقيلة
+test('fast navigation: shell first, last tap wins, heavy results cached', () => {
+  const html = read('index.html');
+  assert.match(html, /function navTo\(v\)\{[\s\S]*sec\.innerHTML=SKEL;[\s\S]*show\(key,false,true\);/, 'shell shown immediately');
+  assert.match(html, /requestAnimationFrame\(\(\)=>setTimeout\(\(\)=>\{if\(my!==navTok\|\|sec\.dataset\.ready==='1'\)return;navRun\(v\)\}/, 'stale render cancelled by the navigation token');
+  assert.match(html, /function goRaw\(v\)\{closeMenu\(\);\s*navTok\+\+;/, 'every navigation bumps the token');
+  assert.match(html, /if\(!shell\)navTok\+\+;/, 'direct renders cancel pending ones');
+  assert.match(html, /key==='form'\)\$\('#bar'\)\.classList\.add\('hide'\)/, 'save bar hidden while the invoice form is a skeleton');
+  assert.match(html, /function clients\(\)\{if\(_clK&&_clI===invoices&&_clC===customers\)return _clK/, 'clients() memoised on its sources');
+  assert.match(html, /if\(RC&&RC\.k===rk&&RC\.i===invoices&&RC\.e===expenses\)/, 'dashboard page cached until data/period/language change');
+  assert.match(html, /\.card\.inv\{content-visibility:auto/, 'long lists skip off-screen rendering');
+  assert.match(html, /prefers-reduced-motion:reduce\)\{\.sk\{animation:none\}/, 'skeleton respects reduced motion');
 });
