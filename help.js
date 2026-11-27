@@ -277,7 +277,9 @@
       return ps.length ? `<div class="hcat">${CATS[c][l]}</div><div class="hchips">${ps.map(p => `<button type="button" data-hp="${p.id}">${esc(p.t[l])}</button>`).join('')}</div>` : '';
     }).join(''));
   }
-  function home() { clear(); menu(); }
+  // نقل التركيز بعد كل شاشة (مسح السجل يُسقط التركيز): زر الرجوع إن وُجد وإلا السجل نفسه
+  function focusScreen() { if (!chat) return; const t = chat.querySelector('.hlog [data-hmenu]') || chat.querySelector('.hlog'); try { t.focus({ preventScroll: true }); } catch (e) {} }
+  function home() { clear(); menu(); focusScreen(); }
   function backLater(ms) { const my = gen; timer = setTimeout(() => { if (chat && my === gen) home(); }, ms); }
   function showProblem(id) {
     const p = HELP.find(x => x.id === id); if (!p) return;
@@ -285,27 +287,30 @@
     clear();
     add(backBtn() + `<p><b>${esc(p.t[l])}</b></p><p>${U.stepsH}</p><ol class="hsteps">${p.steps.map(s => `<li><p>${esc(s[l])}</p>${s.contact ? `<div class="hcontact">${contactHtml(hasSess(), l)}</div>` : ''}${s.img ? `<figure class="himg">${svg(s.img[0], s.img[1], l)}</figure>` : ''}</li>`).join('')}</ol>` +
       `<p class="hq">${U.did}</p><div class="hact"><button type="button" class="pri" data-hok="${p.id}">${U.solved}</button><button type="button" data-hno="${p.id}">${U.persist}</button></div>`);
-    chat.querySelector('.hlog').scrollTop = 0;
+    chat.querySelector('.hlog').scrollTop = 0; focusScreen();
   }
-  function solved() { clear(); add(`<p>${UI[cur()].gladShort}</p>`); backLater(1600); }
+  function solved() { clear(); add(`<p>${UI[cur()].gladShort}</p>`); focusScreen(); backLater(1600); }
   // المرحلة 2: من له جلسة يُرسَل طلبه للمشرفين (help_request في 4_help_requests.sql)؛ بلا جلسة لا إرسال، فقط قناة التواصل
   const canSend = () => { if (!HELP_SEND_ENABLED) return false; try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
+  // فشل الإرسال: يعود نص المستخدم إلى الحقل فلا يُعاد كتابته
+  function restoreText(t) { const inp = chat && chat.querySelector('.hin input'); if (inp && t && !inp.value) inp.value = t; }
   async function helpSubmit(ticket) {
     const l = cur(), U = UI[l];
     clear(); const my = gen;
     const lead = `<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>`;
-    if (!canSend()) { add(lead + contactHtml(hasSess(), l) + backBtn()); return; }
+    if (!canSend()) { add(lead + contactHtml(hasSess(), l) + backBtn()); focusScreen(); return; }
     const box = add(lead + `<p>${U.sending}</p>`);
     try {
       let tk = ''; try { tk = tok(); } catch (e) {}
       await rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } });
       if (!chat || my !== gen) return;                       // غادر المستخدم هذه الشاشة: الطلب أُرسل، ولا نمسّ الشاشة الحالية
       box.innerHTML = lead + `<p>${U.sentOk}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` + contactLinks(l) + backBtn();
-      backLater(6000);
+      focusScreen();   // لا عودة تلقائية هنا: الروابط تحتاج وقتًا للقراءة، والعودة بزر «رجوع»
     } catch (e) {
       if (!chat || my !== gen) return;
       const c = e && e.code;
       box.innerHTML = lead + `<p>${c === 'E_NET' ? U.offline : c === 'E_RATE' ? U.rate : U.sendErr}</p>` + contactHtml(true, l) + backBtn();
+      restoreText(ticket.text); focusScreen();
     }
   }
 
@@ -315,7 +320,7 @@
     chat = document.createElement('div');
     chat.className = 'sheet helpw'; chat.dir = l === 'ar' ? 'rtl' : 'ltr'; chat.lang = l;
     chat.innerHTML = `<div class="hbox" role="dialog" aria-modal="true" aria-label="${U.title}"><div class="hd"><b class="ht">${ICON}<span>${U.title}</span></b><button type="button" class="ibtn sm2" data-hx aria-label="${U.close}"><svg class="i"><use href="#i-x"/></svg></button></div>` +
-      `<div class="hlog" aria-live="polite"></div><form class="hin"><input type="text" maxlength="500" placeholder="${U.ph}" aria-label="${U.ph}" autocomplete="off"><button type="submit" class="pri">${U.send}</button></form></div>`;
+      `<div class="hlog" tabindex="-1"></div><form class="hin"><input type="text" maxlength="500" placeholder="${U.ph}" aria-label="${U.ph}" autocomplete="off"><button type="submit" class="pri">${U.send}</button></form></div>`;
     document.body.appendChild(chat); upd();
     menu();
     chat.addEventListener('click', e => {

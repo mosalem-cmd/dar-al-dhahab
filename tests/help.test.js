@@ -124,5 +124,9 @@ test('help chat shows one screen at a time and never accumulates messages', () =
   assert.doesNotMatch(src, /add\(UI\[cur\(\)\]\.(solved|persist), 'me'\)|add\(esc\(v\), 'me'\)|add\(esc\(p\.t\[l\]\), 'me'\)/, 'no echo bubbles that pile up');
   assert.match(src, /if \(!chat \|\| my !== gen\) return;/, 'late replies must not touch a newer screen');
   assert.match(src, /clearTimeout\(timer\); gen\+\+; chat\.remove\(\)/, 'closing cancels pending timers');
+  assert.match(src, /restoreText\(ticket\.text\)/, 'typed text is restored when sending fails');
+  assert.doesNotMatch(src, /backLater\(6000\)/, 'no timed dismissal of the confirmation with its links');
+  assert.match(src, /function focusScreen\(\)/, 'focus moves to the new screen');
+  assert.doesNotMatch(src, /class="hlog" aria-live/, 'whole log is not an assertive live region');
   for (const l of ['ar', 'fr']) assert.ok(H.UI[l].back && H.UI[l].gladShort, l + ': back / glad strings');
 });
