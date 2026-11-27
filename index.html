@@ -608,6 +608,19 @@ let lastT=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-las
 const AR='٠١٢٣٤٥٦٧٨٩';
 const num=v=>{if(v==null)return 0;const s=String(v).replace(/[٠-٩]/g,d=>AR.indexOf(d)).replace(/٫/g,'.').replace(/[,\s]/g,'');const n=parseFloat(s);return isFinite(n)?n:0};
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
+/* صيغ المعدودات في كل التطبيق (دالة واحدة): عربي: 1 مفرد بـ«واحد/واحدة»، 2 مثنى، 3-10 جمع، 11 فما فوق (والصفر والكسور) مفرد منصوب؛ فرنسي: أقل من 2 مفرد وغيره جمع. لا تمسّ الأرقام ولا البيانات */
+const NOUN={inv:{ar:['فاتورة واحدة','فاتورتان','فواتير','فاتورة'],fr:['facture','factures']},cust:{ar:['زبون واحد','زبونان','زبائن','زبونًا'],fr:['client','clients']},gram:{ar:['غرام واحد','غرامان','غرامات','غرامًا'],fr:['gramme','grammes']},msg:{ar:['رسالة واحدة','رسالتان','رسائل','رسالة'],fr:['message','messages']},day:{ar:['يوم واحد','يومان','أيام','يومًا'],fr:['jour','jours']},dayLeft:{ar:['يوم واحد متبقٍ','يومان متبقيان','أيام متبقية','يومًا متبقيًا'],fr:['jour restant','jours restants']},exp:{ar:['مصروف واحد','مصروفان','مصروفات','مصروفًا'],fr:['dépense','dépenses']},item:{ar:['بند واحد','بندان','بنود','بندًا'],fr:['ligne','lignes']},partner:{ar:['شريك واحد','شريكان','شركاء','شريكًا'],fr:['associé','associés']}};
+function plural(n,noun,lng){
+  const f=(NOUN[noun]||{})[lng==='fr'?'fr':'ar'];if(!f)return fmt(n);
+  n=+n||0;                                            // غير معرّف أو نص غير رقمي = 0 (لا NaN)
+  const v=Math.abs(n),isInt=Number.isInteger(v);
+  if(lng==='fr')return fmt(n)+' '+(v<2?f[0]:f[1]);
+  if(isInt&&v===1)return f[0];
+  if(isInt&&v===2)return f[1];
+  if(isInt&&v>=3&&v<=10)return fmt(n)+' '+f[2];
+  return fmt(n)+' '+f[3];
+}
+const cnt=(n,noun)=>plural(n,noun,lang);
 const pad=n=>String(n).padStart(7,'0');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
@@ -909,7 +922,7 @@ function renderList(){
     <div class="who"><span class="av">${esc(initial(i.client))}</span><div><b>${esc(i.client||t('noName'))}</b><div class="m" dir="ltr" style="text-align:start">${esc(i.phone||'')}</div></div></div>
     <div class="mets"><div><small>${tI('gold')}</small><b><bdi>${fmt(num(i.grams))}</bdi> ${t('g')}</b></div><div><small>${tI('costs')}</small><b>${fmt(i.costsTotal||0)}</b></div><div><small>${esc(t('remain'))}</small>${remOf(i)>0?`<b class="neg">${fmt(remOf(i))}</b>`:`<b class="pos">${esc(t('settled'))}</b>`}</div></div>
     <div class="acts">${i.cancelled?`<button class="sm" data-open="${esc(i.no)}">${ic('undo')}<span>${esc(t('viewRestore'))}</span></button>`:`<button class="sm" data-open="${esc(i.no)}">${tI('edit')}</button><button class="sm" data-img="${esc(i.no)}">${tI('image')}</button>${window.__local?`<button class="sm" data-prt="${esc(i.no)}">${tI('print')}</button>`:''}<button data-del="${esc(i.no)}" class="sm dng">${ic('ban')}<span>${esc(t('cancelInv'))}</span></button>`}</div></div>`).join('');
-  if(list.length>shown)h+=`<button id="more" style="width:100%;margin-bottom:12px">${tI('more')} (${list.length-shown})</button>`;
+  if(list.length>shown)h+=`<button id="more" style="width:100%;margin-bottom:12px">${tI('more')} · ${cnt(list.length-shown,'inv')}</button>`;
   const ae=document.activeElement,hadF=ae&&ae.id==='search',sel=hadF?[ae.selectionStart,ae.selectionEnd,ae.value]:null;
   $('#vList').innerHTML=h;
   if(hadF){const n=$('#search');n.value=sel[2];n.focus();try{n.setSelectionRange(sel[0],sel[1])}catch(e){}}
@@ -1413,7 +1426,7 @@ async function linkCustomer(){
 function custCard(c){return `<div class="card cust" data-ck="${esc(c.key)}">
   <span class="av">${esc(initial(c.name))}</span>
   <div class="cb"><div class="nm">${esc(c.name||t('noName'))}</div><div class="m" dir="ltr" style="text-align:start">${esc(c.phone||'')}</div>
-   <div class="m">${c.count} ${t('invCount')} · <bdi>${fmt(c.grams)}</bdi> ${t('g')}${c.unpaid?` · <span class="badge">${tI('unpaid')}: ${c.unpaid}</span>`:''}</div></div>
+   <div class="m">${cnt(c.count,'inv')} · <bdi>${fmt(c.grams)}</bdi> ${t('g')}${c.unpaid?` · <span class="badge">${tI('unpaid')} · ${cnt(c.unpaid,'inv')}</span>`:''}</div></div>
   <div class="ric"><button class="ibtn sm2" data-ce="${esc(c.key)}" title="${t('custEdit')}" aria-label="${t('custEdit')}">${ic('edit')}</button>${c.saved?`<button class="ibtn sm2 dng" data-cd="${esc(c.id)}" title="${t('custDel')}" aria-label="${t('custDel')}">${ic('trash')}</button>`:''}
   <button class="ibtn" data-nk="${esc(c.key)}" title="${t('newInvFor')}" aria-label="${t('newInvFor')}">${ic('filePlus')}</button></div></div>`}
 function openCust(){
@@ -1455,7 +1468,7 @@ function openProf(key,keep){
     <div class="stat"><small>${tI('kGrams')}</small><b>${fmt(c.grams)}</b></div>
     <div class="stat"><small>${tI('kCosts')} (${esc(t('income'))})</small><b>${fmt(c.costs)}</b></div>
     <div class="stat"><small>${esc(t('sumPaid'))}</small><b>${fmt(dashStats(c.invs,0).paid)}</b></div>
-    <div class="stat ${c.unpaid?'warn':''}"><small>${tI('kUnpaid')} (${c.unpaid})</small><b>${fmt(c.unpaidAmt)}</b></div></div>
+    <div class="stat ${c.unpaid?'warn':''}"><small>${tI('kUnpaid')} · ${cnt(c.unpaid,'inv')}</small><b>${fmt(c.unpaidAmt)}</b></div></div>
    <div class="card"><div class="phd" style="margin:0 0 6px"><h2 style="font-size:16px">${tI('custInfo')}</h2><button class="sm" id="pEdit">${tI('custEdit')}</button></div>
     ${row(t('cphone'),c.phone,1)}${row(t('reg'),c.regNo,1)}${row(t('regDate'),c.regDate,1)}${row(t('listNo'),c.listNo,1)}${row(t('serial'),c.serial,1)}${row(t('address'),c.address)}${row(t('custNote'),c.note)}
     ${[c.phone,c.regNo,c.regDate,c.listNo,c.serial,c.address,c.note].some(Boolean)?'':`<div class="m">—</div>`}</div>
@@ -1560,7 +1573,7 @@ function openRep(){
     ${K(t('income'),fmt(RS.income),'','coins')}
     ${K(t('kCust'),new Set(list.map(i=>i.custId||ckey(i.client,i.phone))).size,'','users')}${K(t('kAvgPrice'),RS.avgPrice?fmt(RS.avgPrice):'—','','scale')}
     ${K(t('avgRecov'),tons>0?fmt(grams/tons)+' '+t('gpt'):'—','','percent')}
-    ${K(t('kUnpaid')+' ('+unp.length+')',fmt(unp.reduce((x,i)=>x+remOf(i),0)),unp.length?'warn':'')}</div>
+    ${K(t('kUnpaid')+' · '+cnt(unp.length,'inv'),fmt(unp.reduce((x,i)=>x+remOf(i),0)),unp.length?'warn':'')}</div>
    <div class="card"><h2>${ic('wallet')}<span>${esc(t('exPeriod'))}</span></h2>${(()=>{const X=exSum(a,b);return `<div class="kv"><span>${esc(t('exTotal2'))}</span><b dir="ltr">${fmt(X.total)} MRU</b></div>${exBars(X.by)}`})()}
     <button data-go="exp" style="width:100%;margin-top:10px">${ic('plus')}<span>${esc(t('exAdd'))}</span></button></div>
    <div class="card"><h2>${tI('byItem')}</h2>${itemE.length?`<table class="tt">${itemE.map(([n,v])=>`<tr><td>${esc(n)}</td><td>${bar(v,itemMax)}</td><td class="v">${fmt(v)}</td></tr>`).join('')}<tr class="tot"><td>${tI('sum')}</td><td></td><td class="v">${fmt(costs)}</td></tr></table>`:'<div class="m">—</div>'}</div>
@@ -1811,7 +1824,7 @@ const subSt=m=>{if(!m||m.role==='admin')return null;if(!m.paid_until)return{k:'n
 const subPill=m=>{const s=subSt(m);if(!s)return'';return pill(t(s.k==='none'?'subNone':s.k==='exp'?'subExp':s.k==='soon'?'subSoon':'subOk'),s.k==='ok'?'confirmed':s.k==='soon'?'pending':s.k==='exp'?'rejected':'closed')};
 const setupRem=m=>Math.max(0,(+m.setup_fee||0)-(+m.setup_paid||0));
 const subCard=m=>{const s=subSt(m);const rem=setupRem(m);return `<div class="card"><div class="row1"><b>${t('subL')}</b>${subPill(m)}</div>
-  <div class="kv"><span>${t('paidUntilL')}</span><b dir="ltr">${m.paid_until?fmtD(m.paid_until+'T12:00:00'):'—'}${s&&s.k!=='none'?` (${s.d>=0?s.d+' '+t('daysLeft'):t('subExp')})`:''}</b></div>
+  <div class="kv"><span>${t('paidUntilL')}</span><b dir="ltr">${m.paid_until?fmtD(m.paid_until+'T12:00:00'):'—'}${s&&s.k!=='none'?` (${s.d>=0?cnt(s.d,'dayLeft'):t('subExp')})`:''}</b></div>
   <div class="kv"><span>${t('monthlyL')}</span><b dir="ltr">${fmt(+m.monthly_fee||0)} MRU</b></div>
   <div class="kv"><span>${t('setupL')}</span><b dir="ltr">${fmt(+m.setup_fee||0)} MRU${rem>0?'':' ✓'}</b></div>${rem>0?`<div class="kv"><span>${t('setupRem')}</span><b dir="ltr">${fmt(rem)} MRU</b></div>`:''}</div>`};
 const kindSel=(id,sel)=>`<select id="${id}">${['monthly','setup','other'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${t('k'+k[0].toUpperCase()+k.slice(1))}</option>`).join('')}</select>`;
@@ -1911,7 +1924,7 @@ let admShow=60;
 function admAccounts(){const q=admQ.trim(),all=(admCache.acc||[]).filter(a=>!q||String(a.mill_name).includes(q)||String(a.phone).includes(digits(q)||q)),list=all.slice(0,admShow);
   $('#admBody').innerHTML=`<div class="srch">${ic('search')}<input id="aq" type="search" placeholder="${t('searchAcc')}" value="${esc(admQ)}"></div>
    ${list.map(a=>`<div class="card cust" data-acc="${a.id}"><span class="av">${esc(initial(a.mill_name))}</span><div class="cb"><div class="nm">${esc(a.mill_name)} ${a.role==='admin'?pill(t('roleAdmin'),'adm'):''}${a.status!=='active'?pill(t('aSusp'),'rejected'):''} ${a.role==='mill'?subPill(a):''}</div>
-    <div class="m" dir="ltr" style="text-align:start">${esc(a.phone)}</div><div class="m">${a.invoices} ${t('invCount')} · ${t('lastSeen')}: ${fmtD(a.last_sync||a.last_login)}${a.msgs_open?` · ${pill(a.msgs_open+' ✉','open')}`:''}${a.pay_pending?` · ${pill(a.pay_pending+' 💳','pending')}`:''}</div></div></div>`).join('')||`<div class="empty">—</div>`}
+    <div class="m" dir="ltr" style="text-align:start">${esc(a.phone)}</div><div class="m">${cnt(a.invoices,'inv')} · ${t('lastSeen')}: ${fmtD(a.last_sync||a.last_login)}${a.msgs_open?` · ${pill(a.msgs_open+' ✉','open')}`:''}${a.pay_pending?` · ${pill(a.pay_pending+' 💳','pending')}`:''}</div></div></div>`).join('')||`<div class="empty">—</div>`}
    ${all.length>list.length?`<button id="aMore" style="width:100%;margin-top:6px">${esc(t('showMore'))} (${all.length-list.length})</button>`:''}`;
   const mb=$('#aMore');if(mb)mb.onclick=()=>{admShow+=100;admAccounts()};
   const i=$('#aq');let tm;i.oninput=()=>{clearTimeout(tm);tm=setTimeout(()=>{admQ=i.value;admShow=60;const p=i.selectionStart;admAccounts();const n=$('#aq');n.focus();try{n.setSelectionRange(p,p)}catch(e){}},250)};

@@ -86,3 +86,12 @@ test('fast navigation: shell first, last tap wins, heavy results cached', () => 
   assert.match(html, /\.card\.inv\{content-visibility:auto/, 'long lists skip off-screen rendering');
   assert.match(html, /prefers-reduced-motion:reduce\)\{\.sk\{animation:none\}/, 'skeleton respects reduced motion');
 });
+
+// v2.6.4: كل رقم يتبعه معدود يمر بدالة الصيغ الواحدة (لا نص رقم + كلمة ثابتة)
+test('counted nouns go through the single plural helper', () => {
+  const html = read('index.html');
+  for (const stale of ["${c.count} ${t('invCount')}", "${a.invoices} ${t('invCount')}", "s.d+' '+t('daysLeft')", "'+unp.length+')'", "${tI('kUnpaid')} (${c.unpaid})", "${tI('more')} (${list.length-shown})"])
+    assert.ok(!html.includes(stale), 'hard-coded count+noun: ' + stale);
+  for (const used of ["cnt(c.count,'inv')", "cnt(a.invoices,'inv')", "cnt(s.d,'dayLeft')", "cnt(unp.length,'inv')", "cnt(c.unpaid,'inv')", "cnt(list.length-shown,'inv')"])
+    assert.ok(html.includes(used), 'missing plural call: ' + used);
+});

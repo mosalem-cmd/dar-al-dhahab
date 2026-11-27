@@ -1,7 +1,8 @@
 // Tests for the invoice math in index.html (node:test, no dependencies).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calc, num, fmt, dashStats, reportStats, repSeries, buildSettings } = require('./extract');
+const plain = x => JSON.parse(JSON.stringify(x));
+const { calc, num, fmt, dashStats, reportStats, repSeries, buildSettings, plural, NOUN } = require('./extract');
 
 test('baseline invoice', () => {
   const r = calc({
@@ -143,4 +144,50 @@ test('settings: empty name is rejected, blank list rows are dropped', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(n.costList)), ['الطحن']);
   assert.deepEqual(JSON.parse(JSON.stringify(n.partList)), [{ name: 'العمال', pct: '40' }]);
   assert.equal(n.name, 'X');
+});
+
+// ---- v2.6.4: صيغ المعدودات (دالة واحدة لكل التطبيق) ----
+test('arabic plural: 1 singular, 2 dual, 3-10 plural, 11+ singular accusative', () => {
+  assert.equal(plural(1, 'inv', 'ar'), 'فاتورة واحدة');
+  assert.equal(plural(2, 'inv', 'ar'), 'فاتورتان');
+  assert.equal(plural(3, 'inv', 'ar'), '3 فواتير');
+  assert.equal(plural(10, 'inv', 'ar'), '10 فواتير');
+  assert.equal(plural(11, 'inv', 'ar'), '11 فاتورة');
+  assert.equal(plural(250, 'inv', 'ar'), '250 فاتورة');
+  assert.equal(plural(0, 'inv', 'ar'), '0 فاتورة');
+  assert.equal(plural(1250, 'inv', 'ar'), '1,250 فاتورة');           // فاصل الآلاف كبقية التطبيق
+});
+
+test('arabic plural for every noun: customer, gram, message, day, days left, expense, item, partner', () => {
+  const want = { cust: ['زبون واحد', 'زبونان', '5 زبائن', '12 زبونًا'], gram: ['غرام واحد', 'غرامان', '4 غرامات', '15 غرامًا'],
+    msg: ['رسالة واحدة', 'رسالتان', '7 رسائل', '30 رسالة'], day: ['يوم واحد', 'يومان', '9 أيام', '45 يومًا'],
+    dayLeft: ['يوم واحد متبقٍ', 'يومان متبقيان', '6 أيام متبقية', '20 يومًا متبقيًا'], exp: ['مصروف واحد', 'مصروفان', '8 مصروفات', '11 مصروفًا'],
+    item: ['بند واحد', 'بندان', '3 بنود', '14 بندًا'], partner: ['شريك واحد', 'شريكان', '10 شركاء', '100 شريكًا'] };
+  for (const [k, [a, b, c, d]] of Object.entries(want)) {
+    const n = [1, 2, +c.match(/\d+/)[0], +d.match(/\d+/)[0]];
+    assert.deepEqual(n.map(x => plural(x, k, 'ar')), [a, b, c, d], k);
+  }
+});
+
+test('french plural: below 2 singular, otherwise plural', () => {
+  assert.equal(plural(0, 'inv', 'fr'), '0 facture');
+  assert.equal(plural(1, 'inv', 'fr'), '1 facture');
+  assert.equal(plural(2, 'inv', 'fr'), '2 factures');
+  assert.equal(plural(25, 'cust', 'fr'), '25 clients');
+  assert.equal(plural(1, 'dayLeft', 'fr'), '1 jour restant');
+  assert.equal(plural(5, 'dayLeft', 'fr'), '5 jours restants');
+  assert.equal(plural(1.5, 'gram', 'fr'), '1.5 gramme');
+});
+
+test('plural: fractions and negatives use the default form, unknown nouns fall back to the number', () => {
+  assert.equal(plural(12.5, 'gram', 'ar'), '12.5 غرامًا');
+  assert.equal(plural(1.5, 'gram', 'ar'), '1.5 غرامًا');        // ليس 1 ولا 2 تمامًا
+  assert.equal(plural(-2, 'inv', 'ar'), 'فاتورتان');
+  assert.equal(plural(3, 'nothing', 'ar'), '3');
+  assert.equal(plural('3', 'inv', 'ar'), '3 فواتير');
+  assert.equal(plural(undefined, 'inv', 'ar'), '0 فاتورة');
+});
+
+test('every noun has 4 arabic forms and 2 french forms', () => {
+  for (const [k, v] of Object.entries(plain(NOUN))) { assert.equal(v.ar.length, 4, k + ' ar'); assert.equal(v.fr.length, 2, k + ' fr'); assert.ok(v.ar.every(Boolean) && v.fr.every(Boolean), k); }
 });
