@@ -25,8 +25,8 @@ function fnSource(name) {
   throw new Error(`Unbalanced braces in ${name}()`);
 }
 
-const code = [line('AR'), line('num'), line('fmt'), line('NOUN'), fnSource('plural'), fnSource('payAmt'), fnSource('dashStats'), fnSource('reportStats'), fnSource('repSeries'), fnSource('buildSettings'), fnSource('calc'),
-  'this.api={calc,num,fmt,payAmt,dashStats,reportStats,repSeries,buildSettings,plural,NOUN};'].join('\n');
+const code = [line('AR'), line('num'), line('fmt'), line('NOUN'), fnSource('plural'), fnSource('payAmt'), fnSource('dashStats'), fnSource('reportStats'), fnSource('repSeries'), fnSource('buildSettings'), fnSource('settingsSnapshot'), fnSource('calc'),
+  'this.api={calc,num,fmt,payAmt,dashStats,reportStats,repSeries,buildSettings,settingsSnapshot,plural,NOUN};'].join('\n');
 const ctx = vm.createContext({});
 vm.runInContext(code, ctx);
 

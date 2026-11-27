@@ -95,3 +95,21 @@ test('counted nouns go through the single plural helper', () => {
   for (const used of ["cnt(c.count,'inv')", "cnt(a.invoices,'inv')", "cnt(s.d,'dayLeft')", "cnt(unp.length,'inv')", "cnt(c.unpaid,'inv')", "cnt(list.length-shown,'inv')"])
     assert.ok(html.includes(used), 'missing plural call: ' + used);
 });
+
+// v2.6.4: الإعدادات والملف الشخصي: حفظ يدوي فقط
+test('settings are saved manually only (no auto-save), with save/cancel bar and leave guard', () => {
+  const html = read('index.html');
+  const calls = [...html.matchAll(/await persistSettings\(\)/g)].length;   // الاستدعاءات فقط (دون التعريف)
+  assert.equal(calls, 1, 'persistSettings() may be called only from saveSetGuard');
+  assert.match(html, /async function saveSetGuard\(\)\{[\s\S]*await persistSettings\(\)/);
+  assert.doesNotMatch(html, /setDeb|setTimeout\(async\(\)=>\{const err=await persistSettings/, 'debounced auto-save removed');
+  assert.match(html, /<button id="saveSet" class="pri" disabled>/, 'save button starts disabled');
+  assert.match(html, /<button id="cancelSet" disabled>/, 'cancel button starts disabled');
+  assert.match(html, /b\.disabled=!d;c\.disabled=!d;/, 'both buttons follow the dirty state');
+  assert.match(html, /markDirty\('set',saveSetGuard,'setStat'\)/, 'leaving with changes triggers the guard');
+  assert.match(html, /function cancelSet\(\)\{setDraft=null;clearDirty\(\);openSet\(\)\}/, 'cancel restores the saved values');
+  assert.match(html, /unsavedQ:'لديك تغييرات غير محفوظة، هل تريد حفظها؟'/);
+  assert.match(html, /function openSet\(keep\)\{\s*if\(!keep\)\{setCosts=\[\.\.\.defCosts\(\)\];setParts=defParts\(\)\.map\(p=>\(\{\.\.\.p\}\)\);setDraft=null\}/, 'a fresh open clears the draft BEFORE rendering');
+  assert.match(html, /captureDraft\(\);lang=b\.dataset\.v;[\s\S]*captureDraft\(\);theme=b\.dataset\.v;/, 'language and theme stay instant and keep the typed draft');
+  assert.match(html, /onSave:v=>\{if\(!v\.name\)return t\('nameReq'\);[\s\S]*refreshSetLists\(\);updateSetBar\(\)\}/, 'item sheets only change the working copy');
+});

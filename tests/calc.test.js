@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const plain = x => JSON.parse(JSON.stringify(x));
-const { calc, num, fmt, dashStats, reportStats, repSeries, buildSettings, plural, NOUN } = require('./extract');
+const { calc, num, fmt, dashStats, reportStats, repSeries, buildSettings, settingsSnapshot, plural, NOUN } = require('./extract');
 
 test('baseline invoice', () => {
   const r = calc({
@@ -190,4 +190,23 @@ test('plural: fractions and negatives use the default form, unknown nouns fall b
 
 test('every noun has 4 arabic forms and 2 french forms', () => {
   for (const [k, v] of Object.entries(plain(NOUN))) { assert.equal(v.ar.length, 4, k + ' ar'); assert.equal(v.fr.length, 2, k + ' fr'); assert.ok(v.ar.every(Boolean) && v.fr.every(Boolean), k); }
+});
+
+// ---- v2.6.4: الحفظ اليدوي: زر «حفظ» يُفعَّل فقط عند فرق حقيقي عن آخر حفظ ----
+test('settings snapshot: equal when nothing really changed, different when a value changes', () => {
+  const S0 = { name: 'مطحنة', ph1: '111', ph2: '', startNo: 1, currency: 'MRU', gramPrice: '' };
+  const f = { name: 'مطحنة', ph1: '111', ph2: '', startNo: '1', currency: 'MRU', gramPrice: '' };
+  const base = settingsSnapshot(S0, f, ['الطحن', 'النقل'], [{ name: 'العمال', pct: '100' }]);
+  const snap = (over, costs, parts) => settingsSnapshot(S0, { ...f, ...over }, costs || ['الطحن', 'النقل'], parts || [{ name: 'العمال', pct: '100' }]);
+  assert.equal(snap({}), base);
+  assert.equal(snap({ name: '  مطحنة  ' }), base, 'surrounding spaces are not a change');
+  assert.equal(snap({ startNo: '١' }), base, 'arabic digits equal the same number');
+  assert.equal(snap({}, ['الطحن', '  ', 'النقل']), base, 'blank rows are ignored');
+  assert.equal(snap({ ph2: '' }, undefined, [{ name: ' العمال ', pct: ' 100 ' }]), base);
+  assert.notEqual(snap({ name: 'اسم جديد' }), base);
+  assert.notEqual(snap({ ph1: '222' }), base);
+  assert.notEqual(snap({ startNo: '5' }), base);
+  assert.notEqual(snap({}, ['الطحن', 'النقل', 'جديد']), base, 'added item');
+  assert.notEqual(snap({}, ['الطحن']), base, 'removed item');
+  assert.notEqual(snap({}, undefined, [{ name: 'العمال', pct: '60' }]), base, 'changed share');
 });
