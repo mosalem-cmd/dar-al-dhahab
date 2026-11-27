@@ -229,7 +229,8 @@ begin
  begin delete from public.admin_audit where id=(select max(id) from public.admin_audit); res := res||chr(10)||'FAIL 14 delete allowed'; exception when others then res := res||chr(10)||(case when sqlerrm='E_AUDIT_READONLY' then 'PASS ' else 'FAIL ' end||'14 delete refused'); end;
  begin truncate public.admin_audit; res := res||chr(10)||'FAIL 15 truncate allowed'; exception when others then res := res||chr(10)||(case when sqlerrm='E_AUDIT_READONLY' then 'PASS ' else 'FAIL ' end||'15 truncate refused'); end;
  -- القراءة
- begin perform public.admin_audit_list(tm); res := res||chr(10)||'FAIL 16 mill read the log'; exception when others then res := res||chr(10)||(case when sqlerrm='E_FORBIDDEN' then 'PASS ' else 'FAIL ' end||'16 a mill cannot read the log'); end;
+ tm := public._new_session(ma);   -- جلسة جديدة: تغيير كلمة السر أعلاه أنهى الجلسات السابقة
+ begin perform public.admin_audit_list(tm); res := res||chr(10)||'FAIL 16 mill read the log'; exception when others then res := res||chr(10)||(case when sqlerrm='E_FORBIDDEN' then 'PASS ' else 'FAIL ' end||'16 a mill cannot read the log: '||sqlerrm); end;
  r := public.admin_audit_list(t1, null, 3);
  res := res||chr(10)||(case when jsonb_array_length(r->'rows')=3 and (r->'rows'->0->>'id')::bigint > (r->'rows'->1->>'id')::bigint and jsonb_array_length(r->'admins')>=2 then 'PASS ' else 'FAIL ' end||'17 newest first, page size respected, admin list for filtering');
  j := public.admin_audit_list(t1, (r->'rows'->2->>'id')::bigint, 3);
@@ -248,7 +249,7 @@ begin
    and has_function_privilege('anon','public.admin_audit_list(text,bigint,integer,uuid,text,date,date,boolean)','execute') and not has_function_privilege('authenticated','public.admin_audit_list(text,bigint,integer,uuid,text,date,date,boolean)','execute')
    and not has_function_privilege('anon','public._audit(text,uuid,jsonb)','execute') then 'PASS ' else 'FAIL ' end||'24 table closed; only the admin read function is callable');
  res := res||chr(10)||(case when (select bool_and(prosecdef and proconfig @> array['search_path=""']) from pg_proc where pronamespace='public'::regnamespace and proname in ('_admin','_audit','_audit_readonly','_audit_accounts','_audit_codes','_audit_payments','_audit_messages','_audit_resets','admin_audit_list')) then 'PASS ' else 'FAIL ' end||'25 all functions security definer with empty search_path');
- begin perform public._admin(tm); res := res||chr(10)||'FAIL 26 _admin accepted a mill'; exception when others then res := res||chr(10)||(case when sqlerrm='E_FORBIDDEN' then 'PASS ' else 'FAIL ' end||'26 _admin still refuses mills'); end;
+ begin perform public._admin(tm); res := res||chr(10)||'FAIL 26 _admin accepted a mill'; exception when others then res := res||chr(10)||(case when sqlerrm='E_FORBIDDEN' then 'PASS ' else 'FAIL ' end||'26 _admin still refuses mills: '||sqlerrm); end;
  raise exception E'ROLLBACK_TEST_RESULT\n%', res;
 end
 
