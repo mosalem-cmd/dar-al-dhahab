@@ -85,7 +85,7 @@ begin
  begin perform public.reset_request('99900000011','newpass11'); res := res || 'FAIL 11 global cap not enforced'; exception when others then res := res || (case when sqlerrm='E_RATE' then 'PASS ' else 'FAIL ' end || '11 global cap (30/hour) enforced'); end;
  res := res || (case when has_function_privilege('anon','public.reset_request(text,text)','execute') and not has_function_privilege('authenticated','public.reset_request(text,text)','execute')
    and not has_table_privilege('anon','public.reset_requests','select') and not has_table_privilege('anon','public.reset_requests','insert') and not has_table_privilege('authenticated','public.reset_requests','select') then 'PASS ' else 'FAIL ' end || '12 grants: anon can only call the function; table closed');
- res := res || (case when (select relrowsecurity from pg_class where oid='public.reset_requests'::regclass) and (select prosecdef and proconfig::text like '%search_path=""%' from pg_proc where proname='reset_request' and pronamespace='public'::regnamespace) then 'PASS ' else 'FAIL ' end || '13 RLS on, function security definer with empty search_path');
+ res := res || (case when (select relrowsecurity from pg_class where oid='public.reset_requests'::regclass) and (select prosecdef and proconfig @> array['search_path=""'] from pg_proc where proname='reset_request' and pronamespace='public'::regnamespace) then 'PASS ' else 'FAIL ' end || '13 RLS on, function security definer with empty search_path');
  raise exception E'ROLLBACK_TEST_RESULT\n%', array_to_string(res, E'\n');
 end
 
