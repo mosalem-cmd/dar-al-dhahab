@@ -115,3 +115,20 @@ test('settings are saved manually only (no auto-save), with save/cancel bar and 
   assert.match(html, /captureDraft\(\);lang=b\.dataset\.v;[\s\S]*captureDraft\(\);theme=b\.dataset\.v;/, 'language and theme stay instant and keep the typed draft');
   assert.match(html, /onSave:v=>\{if\(!v\.name\)return t\('nameReq'\);[\s\S]*refreshSetLists\(\);updateSetBar\(\)\}/, 'item sheets only change the working copy');
 });
+
+// v2.7.0 (المرحلة أ): استعادة كلمة السر: طلب فقط، الرابط مخفي حتى تكتمل صفحة المشرف
+test('forgot password (phase A): request form wired to reset_request, link gated by a flag', () => {
+  const html = read('index.html');
+  assert.match(html, /let RESET_ENABLED=false;/, 'feature stays hidden until the admin side exists');
+  assert.match(html, /!R&&RESET_ENABLED\?`<a href="#" id="aForgot"/, 'link only on the login tab and only when enabled');
+  assert.match(html, /rpc\('reset_request',\{p_phone:\$\('#fPhone'\)\.value,p_new:pw\}\)/);
+  assert.match(html, /if\(pw!==\$\('#fPass2'\)\.value\)/, 'confirmation required');
+  assert.match(html, /E_NO_ACCOUNT:'يرجى إدخال رقم الحساب بشكل صحيح'/);
+  const sql = read('7a_reset_request.sql');
+  assert.match(sql, /extensions\.crypt\(p_new, extensions\.gen_salt\('bf', 10\)\)/, 'only a bcrypt hash is stored');
+  assert.match(sql, /security definer set search_path to ''/);
+  assert.match(sql, /enable row level security/);
+  assert.match(sql, />= 3 then[\s\S]{0,40}E_RATE/, '3 requests per hour per account');
+  assert.doesNotMatch(sql, /update public\.accounts/, 'a request never changes an account');
+  for (const l of ['ar', 'fr']) assert.match(html, new RegExp(`forgotL:'[^']+'[\\s\\S]*?forgotOk:'[^']+'`), l);
+});
