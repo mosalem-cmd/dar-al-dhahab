@@ -2045,7 +2045,7 @@ function admMsgs(){const typed={};document.querySelectorAll('#admBody [data-rt]'
     try{const x=await rpc('admin_msg_claim',{p_token:tok(),p_id:+b.dataset.mc});
       done(x&&x.claimed?'':x&&(x.status==='closed'||x.status==='rejected')?t('msgDone'):t('msgNow')+' '+(x&&x.by||''))}catch(e){done(errT(e))}});
   const act=(id,st)=>async()=>{const ta=B.querySelector(`[data-rt="${id}"]`),txt=ta?ta.value:'';B.querySelectorAll(`[data-rp="${id}"],[data-cl="${id}"],[data-rj="${id}"],[data-rl="${id}"]`).forEach(x=>x.disabled=true);
-    try{await rpc('admin_reply',{p_token:tok(),p_id:+id,p_reply:txt,p_status:st});delete admCache.msgDraft[id];done('')}catch(e){done(errT(e))}};
+    admCache.msgDraft[id]=txt;try{await rpc('admin_reply',{p_token:tok(),p_id:+id,p_reply:txt,p_status:st});delete admCache.msgDraft[id];done('')}catch(e){done(errT(e))}};
   B.querySelectorAll('[data-rp]').forEach(b=>b.onclick=act(b.dataset.rp,'replied'));
   B.querySelectorAll('[data-cl]').forEach(b=>b.onclick=act(b.dataset.cl,'closed'));
   B.querySelectorAll('[data-rj]').forEach(b=>b.onclick=act(b.dataset.rj,'rejected'));
