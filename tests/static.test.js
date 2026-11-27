@@ -117,9 +117,9 @@ test('settings are saved manually only (no auto-save), with save/cancel bar and 
 });
 
 // v2.7.0 (المرحلة أ): استعادة كلمة السر: طلب فقط، الرابط مخفي حتى تكتمل صفحة المشرف
-test('forgot password (phase A): request form wired to reset_request, link gated by a flag', () => {
+test('forgot password: request form wired to reset_request (phase A)', () => {
   const html = read('index.html');
-  assert.match(html, /let RESET_ENABLED=false;/, 'feature stays hidden until the admin side exists');
+  assert.match(html, /let RESET_ENABLED=true;/, 'enabled now that the admin side exists');
   assert.match(html, /!R&&RESET_ENABLED\?`<a href="#" id="aForgot"/, 'link only on the login tab and only when enabled');
   assert.match(html, /rpc\('reset_request',\{p_phone:\$\('#fPhone'\)\.value,p_new:pw\}\)/);
   assert.match(html, /if\(pw!==\$\('#fPass2'\)\.value\)/, 'confirmation required');
@@ -135,4 +135,29 @@ test('forgot password (phase A): request form wired to reset_request, link gated
   for (const [i, l] of ['ar', 'fr'].entries()) for (const k of ['forgotL', 'forgotTitle', 'forgotAcct', 'forgotNew', 'forgotSend', 'forgotOk', 'forgotBack', 'E_NO_ACCOUNT', 'E_BUSY', 'E_RATE', 'E_WEAK_PASS'])
     assert.ok(lines[i].includes(k + ":'"), l + ': missing string ' + k);
   assert.match(sql, /revoke all on function public\.reset_request\(text, text\) from public, authenticated;\s*grant execute on function public\.reset_request\(text, text\) to anon;/);
+});
+
+// v2.8.0: استعادة كلمة السر: صفحة المشرف (استلام، معلومات، موافقة برمز التحقق، رفض) وSQL المرحلة ب
+test('forgot password (admin side): claim, info, approve with verification code, reject', () => {
+  const html = read('index.html'), sql = read('7b_reset_admin.sql');
+  assert.match(html, /\['rst','aReset','shield'\]/, 'admin tab');
+  for (const fn of ['admin_reset_list', 'admin_reset_claim', 'admin_reset_info', 'admin_reset_approve', 'admin_reset_reject']) {
+    assert.match(html, new RegExp(`rpc\\('${fn}'`), 'UI calls ' + fn);
+    assert.match(sql, new RegExp(`function public\\.${fn}\\(`), 'SQL defines ' + fn);
+  }
+  assert.match(html, /p_vcode:v/, 'approval sends the verification code the owner read out');
+  assert.match(html, /\^\\d\{4\}\$/, 'code format checked on the client');
+  assert.match(html, /x&&x\.code/, 'the owner sees the verification code after sending');
+  assert.match(sql, /update public\.reset_requests set status = 'processing'[\s\S]*where id = p_id and status = 'new'[\s\S]*returning \* into r/, 'claim is one atomic UPDATE ... WHERE status=new RETURNING');
+  assert.match(sql, /claimed_by = ad\.id/, 'only the claimant can see info / approve / reject');
+  assert.match(sql, /update public\.accounts set pass_hash = r\.new_hash/, 'activates the owner\'s own stored hash, never a client value');
+  assert.match(sql, /delete from public\.sessions where account_id = r\.account_id/, 'old sessions closed');
+  assert.match(sql, /return jsonb_build_object\('error', 'E_VCODE'\)/, 'wrong code returned as a value so the attempt counter persists');
+  assert.doesNotMatch(sql, /'net'|'grams'/, 'admin info never exposes customer gold or net');
+  assert.doesNotMatch(sql, /grant [^;]* to authenticated/i);
+  const rt = read('sql_tests/7b_rollback_test.sql');
+  assert.match(rt, /ROLLBACK_TEST_RESULT/, 'rollback test always ends with an intentional error');
+  for (const l of [html.split('\n').find(x => /^\s*phone:'الهاتف'/.test(x)), html.split('\n').find(x => /^\s*phone:'Tél'/.test(x))])
+    for (const k of ['aReset', 'rstWarn', 'rstClaim', 'rstApprove', 'rstReject', 'rstVcode', 'rstDone', 'E_VCODE', 'E_NOT_CLAIMED', 'rstCodeShow', 'forgotCodeNote'])
+      assert.ok(l.includes(k + ":'"), 'missing string ' + k);
 });

@@ -66,8 +66,8 @@
     ] },
     { id: 'forgot', cat: 'login', t: { ar: 'نسيت كلمة السر', fr: 'Mot de passe oublié' }, steps: [
       { ar: 'تأكد أولًا من كلمة السر بالضغط على «إظهار».', fr: 'Vérifiez d’abord le mot de passe avec « Afficher ».', img: ['login', 'show'] },
-      { ar: 'لا يمكن استرجاع كلمة السر من التطبيق. راسل الإدارة من رقم هاتفك المسجّل ليعيّن لك المشرف كلمة سر مؤقتة.', fr: 'Le mot de passe ne peut pas être récupéré dans l’application. Contactez l’administration depuis votre numéro inscrit : un mot de passe temporaire vous sera défini.', contact: 1 },
-      { ar: 'بعد الدخول بالكلمة المؤقتة غيّرها فورًا من «الإعدادات ← تغيير كلمة السر».', fr: 'Une fois connecté, changez-le tout de suite : « Paramètres → Changer le mot de passe ».', img: ['settings', 'pwd'] }
+      { ar: 'اضغط «نسيت كلمة السر؟» تحت حقل كلمة السر في صفحة الدخول، واكتب رقم حسابك وكلمة السر الجديدة التي تريدها مرتين، ثم «إرسال». سيظهر لك رمز تحقق من 4 أرقام: احتفظ به.', fr: 'Touchez « Mot de passe oublié ? » sous le champ du mot de passe, saisissez votre numéro de compte et le nouveau mot de passe voulu deux fois, puis « Envoyer ». Un code de vérification à 4 chiffres s’affiche : gardez-le.' },
+      { ar: 'سيتصل بك المشرف على رقمك المسجّل ليتحقق منك: اقرأ له رمز التحقق ولا تعطه لأحد غيره. بعد موافقته ادخل بكلمة السر التي كتبتها. الطلب صالح 24 ساعة.', fr: 'L’administrateur vous appellera sur votre numéro enregistré pour vous identifier : lisez-lui le code de vérification et ne le donnez à personne d’autre. Après son approbation, connectez-vous avec le mot de passe saisi. La demande est valable 24 heures.', contact: 1 }
     ] },
     { id: 'locked', cat: 'login', t: { ar: '«محاولات كثيرة خاطئة» أو «انتهت الجلسة»', fr: '« Trop de tentatives » ou « Session expirée »' }, steps: [
       { ar: 'بعد عدة محاولات خاطئة يُقفل الدخول مؤقتًا: انتظر 15 دقيقة، ثم اكتب كلمة السر بهدوء مع «إظهار».', fr: 'Après plusieurs erreurs, la connexion est bloquée : attendez 15 minutes puis réessayez avec « Afficher ».', img: ['login', 'show'] },
