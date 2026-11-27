@@ -152,7 +152,7 @@ begin
  update public.reset_requests set vcode='1111' where id=idA; update public.reset_requests set vcode='2222' where id=idB;
  res := res || (case when idA<>idB and (select count(*) from public.reset_requests where account_id=ma and status='new')=2 then 'PASS ' else 'FAIL ' end || '02 a second request does NOT cancel the first');
  -- صلاحيات
- begin perform public.admin_reset_list(tm); res := res || 'FAIL 03 mill token read the list'; exception when others then res := res || 'PASS 03 mill token refused: '||sqlerrm; end;
+ begin perform public.admin_reset_list(tm); res := res || 'FAIL 03 mill token read the list'; exception when others then res := res || ('PASS 03 mill token refused: '||sqlerrm); end;
  begin perform public.admin_reset_claim(tm,idA); res := res || 'FAIL 03b mill token claimed'; exception when others then res := res || 'PASS 03b mill token cannot claim'; end;
  begin perform public.admin_reset_list('bad'); res := res || 'FAIL 03c bad token'; exception when others then res := res || 'PASS 03c bad token refused'; end;
  -- القائمة
