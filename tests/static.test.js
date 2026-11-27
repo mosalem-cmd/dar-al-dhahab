@@ -149,12 +149,16 @@ test('forgot password (admin side): claim, info, approve with verification code,
   assert.match(html, /\^\\d\{4\}\$/, 'code format checked on the client');
   assert.match(html, /x&&x\.code/, 'the owner sees the verification code after sending');
   assert.match(sql, /update public\.reset_requests set status = 'processing'[\s\S]*where id = p_id and status = 'new'[\s\S]*returning \* into r/, 'claim is one atomic UPDATE ... WHERE status=new RETURNING');
-  assert.match(sql, /claimed_by = ad\.id/, 'only the claimant can see info / approve / reject');
+  const fnBody = n => { const st = sql.indexOf(`function public.${n}(`); return sql.slice(st, sql.indexOf('end $function$', st)); };
+  for (const n of ['admin_reset_info', 'admin_reset_approve', 'admin_reset_reject'])
+    assert.match(fnBody(n), /claimed_by = ad\.id/, n + ': only the claimant');
+  assert.match(html, /info\.err/, 'a failed info fetch becomes an error state, not a reload loop');
+  assert.doesNotMatch(html, /catch\(e=>done\(errT\(e\)\)\)\}\)/, 'no reload from the info fetch error path');
   assert.match(sql, /update public\.accounts set pass_hash = r\.new_hash/, 'activates the owner\'s own stored hash, never a client value');
   assert.match(sql, /delete from public\.sessions where account_id = r\.account_id/, 'old sessions closed');
   assert.match(sql, /return jsonb_build_object\('error', 'E_VCODE'\)/, 'wrong code returned as a value so the attempt counter persists');
   assert.doesNotMatch(sql, /'net'|'grams'/, 'admin info never exposes customer gold or net');
-  assert.doesNotMatch(sql, /grant [^;]* to authenticated/i);
+  assert.doesNotMatch(sql, /grant [^;]* to (authenticated|public)/i);
   const rt = read('sql_tests/7b_rollback_test.sql');
   assert.match(rt, /ROLLBACK_TEST_RESULT/, 'rollback test always ends with an intentional error');
   for (const l of [html.split('\n').find(x => /^\s*phone:'الهاتف'/.test(x)), html.split('\n').find(x => /^\s*phone:'Tél'/.test(x))])
