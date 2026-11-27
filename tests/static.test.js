@@ -130,5 +130,9 @@ test('forgot password (phase A): request form wired to reset_request, link gated
   assert.match(sql, /enable row level security/);
   assert.match(sql, />= 3 then[\s\S]{0,40}E_RATE/, '3 requests per hour per account');
   assert.doesNotMatch(sql, /update public\.accounts/, 'a request never changes an account');
-  for (const l of ['ar', 'fr']) assert.match(html, new RegExp(`forgotL:'[^']+'[\\s\\S]*?forgotOk:'[^']+'`), l);
+  const lines = html.split('\n').filter(x => /^\s*phone:'/.test(x));          // سطرا النصوص: عربي ثم فرنسي
+  assert.equal(lines.length, 2);
+  for (const [i, l] of ['ar', 'fr'].entries()) for (const k of ['forgotL', 'forgotTitle', 'forgotAcct', 'forgotNew', 'forgotSend', 'forgotOk', 'forgotBack', 'E_NO_ACCOUNT', 'E_BUSY', 'E_RATE', 'E_WEAK_PASS'])
+    assert.ok(lines[i].includes(k + ":'"), l + ': missing string ' + k);
+  assert.match(sql, /revoke all on function public\.reset_request\(text, text\) from public, authenticated;\s*grant execute on function public\.reset_request\(text, text\) to anon;/);
 });
