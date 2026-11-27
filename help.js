@@ -21,7 +21,7 @@
     ar: {
       fab: 'مساعدة', title: 'مساعدة دار الذهب', close: 'إغلاق',
       hello: 'مرحبًا! اختر مشكلتك من القائمة، أو اكتبها في الأسفل.',
-      solved: 'تم حل المشكلة', persist: 'المشكلة مستمرة', more: 'عرض المشاكل',
+      solved: 'تم حل المشكلة', persist: 'المشكلة مستمرة', more: 'عرض المشاكل', back: 'رجوع', gladShort: 'رائع! سعدنا بحل المشكلة ✓',
       thanks: 'رائع! سعدنا بحل المشكلة. هل تحتاج شيئًا آخر؟',
       persistMsg: 'نأسف لاستمرار المشكلة.', noMatch: 'لم أجد حلًا جاهزًا لهذه المشكلة.',
       ph: 'اكتب مشكلتك هنا…', send: 'إرسال', stepsH: 'الحل خطوة بخطوة:', did: 'هل حُلّت المشكلة؟',
@@ -34,7 +34,7 @@
     fr: {
       fab: 'Aide', title: 'Aide Maison de l’Or', close: 'Fermer',
       hello: 'Bonjour ! Choisissez votre problème dans la liste, ou écrivez-le en bas.',
-      solved: 'Problème résolu', persist: 'Le problème persiste', more: 'Voir les problèmes',
+      solved: 'Problème résolu', persist: 'Le problème persiste', more: 'Voir les problèmes', back: 'Retour', gladShort: 'Parfait, problème résolu ✓',
       thanks: 'Parfait, problème résolu ! Besoin d’autre chose ?',
       persistMsg: 'Désolé que le problème persiste.', noMatch: 'Je n’ai pas de solution toute prête pour ce problème.',
       ph: 'Décrivez votre problème…', send: 'Envoyer', stepsH: 'La solution, étape par étape :', did: 'Le problème est-il résolu ?',
@@ -261,40 +261,51 @@
     fab.title = UI[cur()].fab;
   }
 
+  // شاشة واحدة في كل مرة: كل انتقال يمسح ما قبله (لا تتراكم الرسائل). gen يُبطل أي مؤقّت أو ردّ متأخر لشاشة سابقة.
+  let timer = null, gen = 0;
+  function clear() { clearTimeout(timer); gen++; if (!chat) return; const log = chat.querySelector('.hlog'); log.innerHTML = ''; log.scrollTop = 0; }
   function add(html, who) {
     const log = chat.querySelector('.hlog'), d = document.createElement('div');
     d.className = 'hm ' + (who || 'bot'); d.innerHTML = html; log.appendChild(d);
-    log.scrollTo({ top: log.scrollHeight, behavior: reduce() ? 'auto' : 'smooth' });
     return d;
   }
+  const backBtn = () => `<div class="hback"><button type="button" data-hmenu>${UI[cur()].back}</button></div>`;
   function menu() {
     const l = cur();
-    add(Object.keys(CATS).map(c => {
+    add(`<p>${UI[l].hello}</p>` + Object.keys(CATS).map(c => {
       const ps = HELP.filter(p => p.cat === c);
       return ps.length ? `<div class="hcat">${CATS[c][l]}</div><div class="hchips">${ps.map(p => `<button type="button" data-hp="${p.id}">${esc(p.t[l])}</button>`).join('')}</div>` : '';
     }).join(''));
   }
+  function home() { clear(); menu(); }
+  function backLater(ms) { const my = gen; timer = setTimeout(() => { if (chat && my === gen) home(); }, ms); }
   function showProblem(id) {
     const p = HELP.find(x => x.id === id); if (!p) return;
     const l = cur(), U = UI[l];
-    add(esc(p.t[l]), 'me');
-    add(`<p>${U.stepsH}</p><ol class="hsteps">${p.steps.map(s => `<li><p>${esc(s[l])}</p>${s.contact ? `<div class="hcontact">${contactHtml(hasSess(), l)}</div>` : ''}${s.img ? `<figure class="himg">${svg(s.img[0], s.img[1], l)}</figure>` : ''}</li>`).join('')}</ol>` +
+    clear();
+    add(backBtn() + `<p><b>${esc(p.t[l])}</b></p><p>${U.stepsH}</p><ol class="hsteps">${p.steps.map(s => `<li><p>${esc(s[l])}</p>${s.contact ? `<div class="hcontact">${contactHtml(hasSess(), l)}</div>` : ''}${s.img ? `<figure class="himg">${svg(s.img[0], s.img[1], l)}</figure>` : ''}</li>`).join('')}</ol>` +
       `<p class="hq">${U.did}</p><div class="hact"><button type="button" class="pri" data-hok="${p.id}">${U.solved}</button><button type="button" data-hno="${p.id}">${U.persist}</button></div>`);
+    chat.querySelector('.hlog').scrollTop = 0;
   }
+  function solved() { clear(); add(`<p>${UI[cur()].gladShort}</p>`); backLater(1600); }
   // المرحلة 2: من له جلسة يُرسَل طلبه للمشرفين (help_request في 4_help_requests.sql)؛ بلا جلسة لا إرسال، فقط قناة التواصل
   const canSend = () => { if (!HELP_SEND_ENABLED) return false; try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
   async function helpSubmit(ticket) {
-    const l = cur(), U = UI[l], more = `<div class="hact"><button type="button" data-hmenu>${U.more}</button></div>`;
+    const l = cur(), U = UI[l];
+    clear(); const my = gen;
     const lead = `<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>`;
-    if (!canSend()) { add(lead + contactHtml(hasSess(), l) + more); return; }
+    if (!canSend()) { add(lead + contactHtml(hasSess(), l) + backBtn()); return; }
     const box = add(lead + `<p>${U.sending}</p>`);
     try {
       let tk = ''; try { tk = tok(); } catch (e) {}
       await rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } });
-      box.innerHTML = lead + `<p>${U.sentOk}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` + contactLinks(l) + more;
+      if (!chat || my !== gen) return;                       // غادر المستخدم هذه الشاشة: الطلب أُرسل، ولا نمسّ الشاشة الحالية
+      box.innerHTML = lead + `<p>${U.sentOk}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` + contactLinks(l) + backBtn();
+      backLater(6000);
     } catch (e) {
+      if (!chat || my !== gen) return;
       const c = e && e.code;
-      box.innerHTML = lead + `<p>${c === 'E_NET' ? U.offline : c === 'E_RATE' ? U.rate : U.sendErr}</p>` + contactHtml(true, l) + more;
+      box.innerHTML = lead + `<p>${c === 'E_NET' ? U.offline : c === 'E_RATE' ? U.rate : U.sendErr}</p>` + contactHtml(true, l) + backBtn();
     }
   }
 
@@ -306,25 +317,25 @@
     chat.innerHTML = `<div class="hbox" role="dialog" aria-modal="true" aria-label="${U.title}"><div class="hd"><b class="ht">${ICON}<span>${U.title}</span></b><button type="button" class="ibtn sm2" data-hx aria-label="${U.close}"><svg class="i"><use href="#i-x"/></svg></button></div>` +
       `<div class="hlog" aria-live="polite"></div><form class="hin"><input type="text" maxlength="500" placeholder="${U.ph}" aria-label="${U.ph}" autocomplete="off"><button type="submit" class="pri">${U.send}</button></form></div>`;
     document.body.appendChild(chat); upd();
-    add(`<p>${U.hello}</p>`); menu();
+    menu();
     chat.addEventListener('click', e => {
       const b = e.target.closest('button,[data-hx]');
       if (e.target === chat || (b && b.hasAttribute('data-hx'))) { closeChat(); return; }
       if (!b) return;
       if (b.dataset.hp) { showProblem(b.dataset.hp); return; }
-      if (b.dataset.hok) { add(UI[cur()].solved, 'me'); add(`<p>${UI[cur()].thanks}</p><div class="hact"><button type="button" data-hmenu>${UI[cur()].more}</button></div>`); return; }
-      if (b.dataset.hno) { add(UI[cur()].persist, 'me'); helpSubmit(buildTicket(b.dataset.hno, '', ctx())); return; }
-      if (b.hasAttribute('data-hmenu')) { menu(); return; }
+      if (b.dataset.hok) { solved(); return; }
+      if (b.dataset.hno) { helpSubmit(buildTicket(b.dataset.hno, '', ctx())); return; }
+      if (b.hasAttribute('data-hmenu')) { home(); return; }
       if (b.hasAttribute('data-hmsgs')) { closeChat(); try { go('msgs'); } catch (er) {} }
     });
     chat.querySelector('.hin').addEventListener('submit', e => {
       e.preventDefault();
       const inp = chat.querySelector('.hin input'), v = inp.value.trim(); if (!v) return;
-      inp.value = ''; inp.blur(); add(esc(v), 'me'); helpSubmit(buildTicket(null, v, ctx()));
+      inp.value = ''; inp.blur(); helpSubmit(buildTicket(null, v, ctx()));
     });
     chat.querySelector('[data-hx]').focus();
   }
-  function closeChat() { if (!chat) return; chat.remove(); chat = null; upd(); try { fab.focus(); } catch (e) {} }
+  function closeChat() { if (!chat) return; clearTimeout(timer); gen++; chat.remove(); chat = null; upd(); try { fab.focus(); } catch (e) {} }
 
   function init() {
     fab = document.getElementById('helpFab'); if (!fab) return;

@@ -103,7 +103,7 @@ test('phase 2 SQL: session required, rate-limited, help kind allowed', () => {
 test('service worker caches help.js', () => {
   const sw = read('sw.js');
   assert.match(sw, /'\.\/help\.js'/);
-  assert.match(sw, /const VERSION='dar-v2\.6\.4'/);
+  assert.match(sw, /const VERSION='dar-v2\.6\.5'/);
 });
 
 test('dark-mode logo: transparent version used in dark mode only, phone icon unchanged', () => {
@@ -113,4 +113,16 @@ test('dark-mode logo: transparent version used in dark mode only, phone icon unc
   assert.match(read('sw.js'), /'\.\/logo-dark\.png'/);
   const icons = JSON.parse(read('manifest.webmanifest')).icons.map(i => i.src);
   assert.ok(!icons.some(s => /logo-dark/.test(s)), 'manifest icons must not change');
+});
+
+// v2.6.5: نافذة المساعدة: شاشة واحدة في كل مرة، بلا تراكم رسائل
+test('help chat shows one screen at a time and never accumulates messages', () => {
+  const src = read('help.js');
+  assert.match(src, /function clear\(\) \{ clearTimeout\(timer\); gen\+\+;/, 'clear() resets timer and bumps the generation');
+  for (const fn of ['showProblem', 'solved', 'helpSubmit', 'home'])
+    assert.match(src.slice(src.indexOf('function ' + fn)), /^[\s\S]{0,260}clear\(\)/, fn + ' must clear the log first');
+  assert.doesNotMatch(src, /add\(UI\[cur\(\)\]\.(solved|persist), 'me'\)|add\(esc\(v\), 'me'\)|add\(esc\(p\.t\[l\]\), 'me'\)/, 'no echo bubbles that pile up');
+  assert.match(src, /if \(!chat \|\| my !== gen\) return;/, 'late replies must not touch a newer screen');
+  assert.match(src, /clearTimeout\(timer\); gen\+\+; chat\.remove\(\)/, 'closing cancels pending timers');
+  for (const l of ['ar', 'fr']) assert.ok(H.UI[l].back && H.UI[l].gladShort, l + ': back / glad strings');
 });
