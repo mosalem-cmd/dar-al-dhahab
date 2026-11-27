@@ -419,7 +419,7 @@ body.formv main{padding-bottom:14px}
 .tabbar a em{width:46px}
 #hSync:empty{display:none}
 .authv header #btnBack:not(.hide){display:inline-flex!important}
-.setbar{position:sticky;top:74px;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:8px 0;margin-bottom:6px;border-bottom:1px solid var(--line)}.setbar button{min-height:44px}.setbar .pri{flex:1 1 auto}#setStat{flex:1 1 100%}#setStat:empty{display:none}#setStat .note{margin:0}
+.setbar{position:sticky;top:74px;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:8px 0;margin-bottom:6px;border-bottom:1px solid var(--line)}.setbar[hidden]{display:none}.setbar button{min-height:44px}.setbar .pri{flex:1 1 auto}#setStat{flex:1 1 100%}#setStat:empty{display:none}#setStat .note{margin:0}
 .hb[data-go=notes]{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:14px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 /* 12: «+ فاتورة جديدة» شفافة فقط (الألوان كما هي) */
 .hero .cta button.pri[data-go=new]{background:rgba(255,255,255,.82)!important}
@@ -1147,7 +1147,7 @@ function openSet(keep){
   const sec=(icn,title,body)=>`<div class="card sec"><div class="sh">${ic(icn)}<b>${title}</b></div><div class="sb">${body}</div></div>`;
   const seg=(id,opts,curv)=>`<div class="seg" id="${id}">${opts.map(([v,l])=>`<button data-v="${v}" class="${v===curv?'on':''}">${l}</button>`).join('')}</div>`;
   $('#vSet').innerHTML=`<div class="phd"><h2>${tI('settings')}</h2><button class="sm" data-go="home">${ic('book')}<span>${t('guide')}</span></button></div>
-   <div class="setbar"><button id="saveSet" class="pri" disabled>${ic('save')}<span>${t('saveSet').replace(LEAD,'')}</span></button><button id="cancelSet" disabled>${esc(t('cancelSetL'))}</button><div id="setStat" role="status"></div></div>
+   <div class="setbar" id="setBar" hidden><button id="saveSet" class="pri" disabled>${ic('save')}<span>${t('saveSet').replace(LEAD,'')}</span></button><button id="cancelSet" disabled>${esc(t('cancelSetL'))}</button><div id="setStat" role="status"></div></div>
    ${sec('globe',t('sLang'),seg('segLang',[['ar','العربية'],['fr','Français']],lang)+`<div style="height:10px"></div>`+seg('segTheme',[['light',t('light')],['dark',t('dark')]],theme))}
    ${sec('building',t('sOrg'),`<div class="grid"><div class="full"><label>${t('millName')}</label><input data-s="name" value="${dv('name')}"></div>
     <div><label>${t('ph1')}</label><input data-s="ph1" class="num" inputmode="tel" value="${dv('ph1')}"></div>
@@ -1225,6 +1225,7 @@ function captureDraft(){setDraft=setFields()}
 function updateSetBar(){
   const b=$('#saveSet'),c=$('#cancelSet');if(!b)return;
   const d=setSnap()!==setBase;b.disabled=!d;c.disabled=!d;
+  $('#setBar').hidden=!d&&!$('#setStat').textContent;   // يظهر عند وجود تغيير أو ما دامت رسالة الحفظ ظاهرة
   if(d)markDirty('set',saveSetGuard,'setStat');else if(dirty&&dirty.v==='set')clearDirty();
 }
 async function saveSetGuard(){
@@ -1246,7 +1247,7 @@ let setStT=null;
 function setStatus(err){
   const x=$('#setStat');if(!x)return;
   x.innerHTML=err?`<div class="note">${esc(err)}</div>`:`<div class="note ok">${tI('setSaved')}</div>`;
-  clearTimeout(setStT);if(!err)setStT=setTimeout(()=>{const y=$('#setStat');if(y)y.innerHTML=''},2500);
+  clearTimeout(setStT);if(!err)setStT=setTimeout(()=>{const y=$('#setStat');if(y){y.innerHTML='';updateSetBar()}},2500);
 }
 // تتبّع التعديل فقط (بلا أي حفظ): كل كتابة في حقل إعدادات تُحدّث حالة الأزرار
 $('#vSet').addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.s)updateSetBar()});

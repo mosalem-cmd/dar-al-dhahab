@@ -105,6 +105,8 @@ test('settings are saved manually only (no auto-save), with save/cancel bar and 
   assert.doesNotMatch(html, /setDeb|setTimeout\(async\(\)=>\{const err=await persistSettings/, 'debounced auto-save removed');
   assert.match(html, /<button id="saveSet" class="pri" disabled>/, 'save button starts disabled');
   assert.match(html, /<button id="cancelSet" disabled>/, 'cancel button starts disabled');
+  assert.match(html, /<div class="setbar" id="setBar" hidden>/, 'bar hidden until there is a change');
+  assert.match(html, /\$\('#setBar'\)\.hidden=!d&&!\$\('#setStat'\)\.textContent/, 'bar follows the dirty state / saved message');
   assert.match(html, /b\.disabled=!d;c\.disabled=!d;/, 'both buttons follow the dirty state');
   assert.match(html, /markDirty\('set',saveSetGuard,'setStat'\)/, 'leaving with changes triggers the guard');
   assert.match(html, /function cancelSet\(\)\{setDraft=null;clearDirty\(\);openSet\(\)\}/, 'cancel restores the saved values');
