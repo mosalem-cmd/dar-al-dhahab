@@ -165,3 +165,19 @@ test('forgot password (admin side): claim, info, approve with verification code,
     for (const k of ['aReset', 'rstWarn', 'rstClaim', 'rstApprove', 'rstReject', 'rstVcode', 'rstDone', 'E_VCODE', 'E_NOT_CLAIMED', 'rstCodeShow', 'forgotCodeNote'])
       assert.ok(l.includes(k + ":'"), 'missing string ' + k);
 });
+
+// v2.9.0: استلام رسائل المشرف قبل الرد
+test('admin messages: claim/release UI, reply buttons only for a live own claim, rejected label, SQL guards', () => {
+  const html = read('index.html'), sql = read('7c_claims.sql');
+  assert.match(html, /rpc\('admin_msg_claim'/);
+  assert.match(html, /rpc\('admin_msg_release'/);
+  assert.match(html, /m\.mine&&m\.claim_live/, 'reply controls gated on mine && claim_live');
+  const i = html.indexOf('canWork?`<textarea'), j = html.indexOf('data-rp="${m.id}"');
+  assert.ok(i > 0 && j > i, 'reply buttons rendered only inside the canWork branch');
+  assert.match(html, /\.pill\.rejected/);
+  for (const l of [html.split('\n').find(x => /^\s*phone:'الهاتف'/.test(x)), html.split('\n').find(x => /^\s*phone:'Tél'/.test(x))])
+    for (const k of ['st_rejected', 'msgClaim', 'msgRelease', 'stProc', 'stNew', 'stDone'])
+      assert.ok(l.includes(k + ":'"), 'missing string ' + k);
+  assert.match(sql, /create or replace function public\.admin_msg_claim[\s\S]*?update public\.messages set claimed_by = ad\.id[\s\S]*?returning \* into m;/);
+  assert.match(sql, /function public\.admin_reply[\s\S]*?raise exception 'E_NOT_CLAIMED'/);
+});
