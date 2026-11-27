@@ -181,3 +181,26 @@ test('admin messages: claim/release UI, reply buttons only for a live own claim,
   assert.match(sql, /create or replace function public\.admin_msg_claim[\s\S]*?update public\.messages set claimed_by = ad\.id[\s\S]*?returning \* into m;/);
   assert.match(sql, /function public\.admin_reply[\s\S]*?raise exception 'E_NOT_CLAIMED'/);
 });
+
+// v2.10.0: سجل التعديلات (واجهة المشرف + ملف 8_audit.sql)
+test('admin audit log: tab, rpc with cursor, escaped details, labels in both languages, append-only SQL', () => {
+  const html = read('index.html'), sql = read('8_audit.sql');
+  assert.match(html, /\['log','aLog','receipt'\]/, 'log tab exists');
+  assert.match(html, /admTab==='log'\)return admLogStart\(\)/, 'dispatched from openAdmin');
+  assert.match(html, /rpc\('admin_audit_list',\{[^}]*p_cursor:/, 'UI pages with p_cursor');
+  assert.match(html, /<span>\$\{esc\(lgKey\(k\)\)\}<\/span>/, 'detail labels escaped');
+  assert.match(html, /return esc\(s\)/, 'detail values escaped');
+  assert.match(html, /esc\(r\.admin_name\|\|'—'\)/, 'admin name escaped');
+  assert.match(html, /esc\(r\.target_name\)/, 'mill name escaped');
+  const acts = ['account_status', 'subscription', 'password_set', 'code_create', 'code_revoke', 'payment_add', 'payment_status', 'msg_claim', 'msg_release', 'msg_replied', 'msg_closed', 'msg_rejected', 'reset_claim', 'reset_approve', 'reset_reject', 'reset_wrong_code'];
+  for (const l of [html.split('\n').find(x => /^\s*phone:'الهاتف'/.test(x)), html.split('\n').find(x => /^\s*phone:'Tél'/.test(x))]) {
+    for (const a of acts) assert.ok(l.includes('lg_' + a + ":'"), 'missing action label ' + a);
+    for (const k of ['aLog', 'lgMore', 'lgNone', 'lgNewest', 'lgOldest', 'lgFrom', 'lgTo', 'lgAdmin', 'lgAction'])
+      assert.ok(l.includes(k + ":'"), 'missing string ' + k);
+  }
+  assert.match(sql, /before update or delete on public\.admin_audit/, 'append-only trigger');
+  assert.match(sql, /before truncate on public\.admin_audit/, 'truncate trigger');
+  assert.match(sql, /revoke all on public\.admin_audit from public, anon, authenticated/);
+  assert.match(sql, /right\(new\.code, 3\)/, 'only the last 3 chars of a code');
+  assert.doesNotMatch(sql, /'code', new\.code/, 'full code never stored');
+});
