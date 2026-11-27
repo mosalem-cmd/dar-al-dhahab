@@ -2116,7 +2116,7 @@ function lgRowsHtml(){
   if(X.err)return `<div class="note">${esc(X.err)}</div>`;
   if(!X.rows.length)return X.busy?`<div class="empty">${t('loadingS')}</div>`:`<div class="empty">${t('lgNone')}</div>`;
   return X.rows.map(r=>{const o=!!X.open[r.id];
-    return `<div class="card lgrow" data-lg="${esc(r.id)}"><div class="row1"><b>${esc(lgAct(r.action))}</b><span class="m">${esc(fmtDT(Date.parse(r.at)))}</span></div>
+    return `<div class="card lgrow" data-lg="${esc(r.id)}" role="button" tabindex="0" aria-expanded="${admLogX.open[r.id]?'true':'false'}"><div class="row1"><b>${esc(lgAct(r.action))}</b><span class="m">${esc(fmtDT(Date.parse(r.at)))}</span></div>
      <div class="m">${esc(r.admin_name||'—')}${r.target_name?` · ${esc(t('lgMill'))}: <b>${esc(r.target_name)}</b>`:''}</div>
      ${o?`<div class="lgdet">${lgDetails(r.details)}</div>`:''}</div>`}).join('')
    +(X.more?`<div class="acts"><button class="sm pri" id="lgMore"${X.busy?' disabled':''}>${t(X.busy?'loadingS':'lgMore')}</button></div>`:X.busy?`<div class="empty">${t('loadingS')}</div>`:'');
@@ -2124,7 +2124,7 @@ function lgRowsHtml(){
 function lgPaint(){
   const L_=$('#lgL');if(!L_)return;
   L_.innerHTML=lgRowsHtml();
-  L_.querySelectorAll('[data-lg]').forEach(c=>c.onclick=()=>{const id=c.dataset.lg;admLogX.open[id]=!admLogX.open[id];lgPaint()});
+  L_.querySelectorAll('[data-lg]').forEach(c=>{const tg=()=>{const id=c.dataset.lg;admLogX.open[id]=!admLogX.open[id];lgPaint();const n=document.querySelector(`[data-lg="${id}"]`);if(n)n.focus()};c.onclick=tg;c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}}});
   const m=$('#lgMore');if(m)m.onclick=e=>{e.stopPropagation();lgLoad(true)};
 }
 function lgFilters(){
