@@ -213,3 +213,14 @@ test('fast taps on buttons and the bottom bar are never cancelled', () => {
   for (const sel of ['a', 'button', '[data-go]', '[data-open]', '[data-ck]', '[data-acc]']) assert.ok(line.includes(sel), 'interactive element excluded: ' + sel);
   assert.match(html, /html\{touch-action:manipulation/, 'double-tap zoom still disabled by CSS');
 });
+
+// v2.10.2: لا يعلق «جارٍ الحفظ»: مهلة لكل طلب، وحارس، وتعافٍ ذاتي عند العودة
+test('server requests time out and sync recovers by itself', () => {
+  const html = read('index.html');
+  assert.match(html, /async function rpc\(fn,args,ms\)/);
+  assert.match(html, /Promise\.race\(\[/, 'timeout wins even if fetch ignores abort');
+  assert.match(html, /code:timedOut\?'E_TIMEOUT':'E_NET'/);
+  assert.match(html, /if\(syncing&&Date\.now\(\)-syncAt>60000\)syncing=false;/, 'watchdog');
+  for (const ev of ["'online'", "'visibilitychange'", "'pageshow'", "'focus'"]) assert.ok(html.includes('addEventListener(' + ev), 'recovers on ' + ev);
+  assert.match(html, /E_TIMEOUT:'[^']+'[\s\S]*E_TIMEOUT:'[^']+'/, 'message in both languages');
+});
