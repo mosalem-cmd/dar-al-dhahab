@@ -103,7 +103,7 @@ test('phase 2 SQL: session required, rate-limited, help kind allowed', () => {
 test('service worker caches help.js', () => {
   const sw = read('sw.js');
   assert.match(sw, /'\.\/help\.js'/);
-  assert.match(sw, /const VERSION='dar-v2\.10\.3'/);
+  assert.match(sw, /const VERSION='dar-v2\.10\.4'/);
 });
 
 test('dark-mode logo: transparent version used in dark mode only, phone icon unchanged', () => {
@@ -129,4 +129,16 @@ test('help chat shows one screen at a time and never accumulates messages', () =
   assert.match(src, /function focusScreen\(\)/, 'focus moves to the new screen');
   assert.doesNotMatch(src, /class="hlog" aria-live/, 'whole log is not an assertive live region');
   for (const l of ['ar', 'fr']) assert.ok(H.UI[l].back && H.UI[l].gladShort, l + ': back / glad strings');
+});
+
+// v2.10.4: إرسال طلب المساعدة: مهلة، إعادة محاولة، وطابور بلا اتصال يُرسل مرة واحدة
+test('help request: timeout + retry, offline queue sent exactly once', () => {
+  const src = read('help.js');
+  assert.match(src, /SEND_MS = 15000/, 'time limit for sending');
+  assert.match(src, /data-hretry/, 'retry button');
+  assert.match(src, /restoreText\(ticket\.text\)/, 'typed text kept on failure');
+  assert.match(src, /if \(isOffline\(\)\) \{ queue\(ticket\)/, 'offline: saved on the phone');
+  assert.match(src, /if \(e && e\.code === 'E_NET'\) break;/, 'only never-sent requests stay queued');
+  assert.match(src, /if \(flushing \|\| !canSend\(\)/, 'one sender at a time');
+  for (const l of ['ar', 'fr']) assert.ok(H.UI[l].retryMsg && H.UI[l].retry && H.UI[l].queued, l + ': strings');
 });

@@ -29,7 +29,7 @@
       inApp: 'راسل الإدارة من «الإعدادات ← الشكاوى والملاحظات».', openMsgs: 'فتح الشكاوى والملاحظات',
       noSess: 'تواصل مع الجهة التي أعطتك رمز الاعتماد.',
       sending: 'جارٍ إرسال طلبك إلى الإدارة…', sentOk: 'وصل طلبك إلى الإدارة، وستجد الرد في «الإعدادات ← الشكاوى والملاحظات».',
-      offline: 'لا يوجد اتصال بالإنترنت، فلم يُرسل الطلب.', rate: 'أرسلت طلبات كثيرة، انتظر قليلًا ثم حاول.', sendErr: 'تعذّر إرسال الطلب.'
+      offline: 'لا يوجد اتصال بالإنترنت، فلم يُرسل الطلب.', rate: 'أرسلت طلبات كثيرة، انتظر قليلًا ثم حاول.', retryMsg: 'تعذّر الإرسال، أعد المحاولة.', retry: 'إعادة المحاولة', queued: 'لا يوجد اتصال الآن. سيُرسل طلبك تلقائيًا عند عودة الاتصال.', sendErr: 'تعذّر إرسال الطلب.'
     },
     fr: {
       fab: 'Aide', title: 'Aide Maison de l’Or', close: 'Fermer',
@@ -42,7 +42,7 @@
       inApp: 'Écrivez à l’administration depuis « Paramètres → Réclamations et remarques ».', openMsgs: 'Ouvrir Réclamations et remarques',
       noSess: 'Contactez la personne qui vous a donné le code d’approbation.',
       sending: 'Envoi de votre demande à l’administration…', sentOk: 'Votre demande est arrivée à l’administration ; la réponse sera dans « Paramètres → Réclamations et remarques ».',
-      offline: 'Pas de connexion Internet : la demande n’a pas été envoyée.', rate: 'Trop de demandes envoyées, patientez un peu.', sendErr: 'Échec de l’envoi de la demande.'
+      offline: 'Pas de connexion Internet : la demande n’a pas été envoyée.', rate: 'Trop de demandes envoyées, patientez un peu.', retryMsg: 'Échec de l’envoi, réessayez.', retry: 'Réessayer', queued: 'Pas de connexion pour le moment. Votre demande sera envoyée automatiquement au retour de la connexion.', sendErr: 'Échec de l’envoi de la demande.'
     }
   };
 
@@ -294,25 +294,55 @@
   const canSend = () => { if (!HELP_SEND_ENABLED) return false; try { return hasSess() && typeof rpc === 'function'; } catch (e) { return false; } };
   // فشل الإرسال: يعود نص المستخدم إلى الحقل فلا يُعاد كتابته
   function restoreText(t) { const inp = chat && chat.querySelector('.hin input'); if (inp && t && !inp.value) inp.value = t; }
+  // ===== إرسال الطلب: مهلة 15 ثانية؛ بلا اتصال يُحفظ في الهاتف ويُرسل مرة واحدة عند عودته =====
+  const QK = 'dar-help-queue', SEND_MS = 15000;
+  const qGet = () => { try { return JSON.parse(localStorage.getItem(QK) || '[]'); } catch (e) { return []; } };
+  const qSet = a => { try { a.length ? localStorage.setItem(QK, JSON.stringify(a)) : localStorage.removeItem(QK); } catch (e) {} };
+  const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+  const sendNow = (tk, ticket) => rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } }, SEND_MS);
+  function queue(ticket) {
+    const q = qGet();
+    if (!q.some(x => x.t.problemId === ticket.problemId && x.t.text === ticket.text)) q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: ticket });
+    qSet(q);
+  }
+  // يُرسل الطابور عند عودة الاتصال: كل طلب مرة واحدة فقط. لا يبقى في الطابور إلا ما لم يخرج من الهاتف أصلًا (لا شبكة)؛
+  // أي نتيجة أخرى (نجاح، رفض، انتهاء مهلة قد يكون الطلب وصل فيها) تُخرجه من الطابور فلا يتكرر.
+  let flushing = false;
+  async function flushQueue() {
+    if (flushing || !canSend() || isOffline()) return;
+    let q = qGet(); if (!q.length) return;
+    flushing = true;
+    try {
+      let tk = ''; try { tk = tok(); } catch (e) {}
+      for (const item of q) {
+        try { await sendNow(tk, item.t); } catch (e) { if (e && e.code === 'E_NET') break; }   // لا شبكة: يبقى ليُعاد لاحقًا
+        q = qGet().filter(x => x.id !== item.id); qSet(q);
+      }
+    } finally { flushing = false; }
+  }
   async function helpSubmit(ticket) {
     const l = cur(), U = UI[l];
     clear(); const my = gen;
     const lead = `<p>${ticket.problemId ? U.persistMsg : U.noMatch}</p>`;
     if (!canSend()) { add(lead + contactHtml(hasSess(), l) + backBtn()); focusScreen(); return; }
+    if (isOffline()) { queue(ticket); add(lead + `<p>${U.queued}</p>` + backBtn()); focusScreen(); return; }
     const box = add(lead + `<p>${U.sending}</p>`);
     try {
       let tk = ''; try { tk = tok(); } catch (e) {}
-      await rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } });
+      await sendNow(tk, ticket);
       if (!chat || my !== gen) return;                       // غادر المستخدم هذه الشاشة: الطلب أُرسل، ولا نمسّ الشاشة الحالية
       box.innerHTML = lead + `<p>${U.sentOk}</p><button type="button" class="hlink" data-hmsgs>${U.openMsgs}</button>` + contactLinks(l) + backBtn();
       focusScreen();   // لا عودة تلقائية هنا: الروابط تحتاج وقتًا للقراءة، والعودة بزر «رجوع»
     } catch (e) {
-      if (!chat || my !== gen) return;
       const c = e && e.code;
-      box.innerHTML = lead + `<p>${c === 'E_NET' ? U.offline : c === 'E_RATE' ? U.rate : U.sendErr}</p>` + contactHtml(true, l) + backBtn();
+      if (c === 'E_NET') { queue(ticket); if (chat && my === gen) { box.innerHTML = lead + `<p>${U.queued}</p>` + backBtn(); focusScreen(); } return; }   // لم يخرج من الهاتف: يُحفظ ويُرسل لاحقًا
+      if (!chat || my !== gen) return;
+      lastFailed = ticket;
+      box.innerHTML = lead + `<p>${c === 'E_RATE' ? U.rate : U.retryMsg}</p>` + (c === 'E_RATE' ? '' : `<div class="hact"><button type="button" class="pri" data-hretry>${U.retry}</button></div>`) + contactHtml(true, l) + backBtn();
       restoreText(ticket.text); focusScreen();
     }
   }
+  let lastFailed = null;
 
   function openChat() {
     if (chat) return;
@@ -331,6 +361,7 @@
       if (b.dataset.hok) { solved(); return; }
       if (b.dataset.hno) { helpSubmit(buildTicket(b.dataset.hno, '', ctx())); return; }
       if (b.hasAttribute('data-hmenu')) { home(); return; }
+      if (b.hasAttribute('data-hretry') && lastFailed) { const tk = lastFailed; lastFailed = null; const inp = chat.querySelector('.hin input'); if (inp && inp.value === tk.text) inp.value = ''; helpSubmit(tk); return; }
       if (b.hasAttribute('data-hmsgs')) { closeChat(); try { go('msgs'); } catch (er) {} }
     });
     chat.querySelector('.hin').addEventListener('submit', e => {
@@ -352,11 +383,15 @@
     new MutationObserver(upd).observe(document.body, { childList: true });
     const ns = document.getElementById('sheet'); if (ns) new MutationObserver(upd).observe(ns, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('click', () => setTimeout(upd, 0));   // تحديث اللغة في وصف الزر
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && chat) closeChat(); });   // يعمل حتى لو خرج التركيز من النافذة
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && chat) closeChat(); });
+    root.addEventListener('online', () => setTimeout(flushQueue, 500));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') flushQueue(); });
+    root.addEventListener('pageshow', () => flushQueue());
+    setTimeout(flushQueue, 2000);   // يعمل حتى لو خرج التركيز من النافذة
     upd();
   }
 
-  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, open: openChat, close: closeChat,
+  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, flushQueue, queueSize: () => qGet().length, open: openChat, close: closeChat,
     title: (id, l) => { const p = HELP.find(x => x.id === id); return p ? p.t[l === 'fr' ? 'fr' : 'ar'] : (id === 'free' || !id ? (l === 'fr' ? 'Texte libre' : 'نص حر') : id); } };
   if (typeof document !== 'undefined') init();
 })(typeof window !== 'undefined' ? window : globalThis);
