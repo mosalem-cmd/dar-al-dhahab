@@ -1849,7 +1849,7 @@ async function flush(){
   try{await rpc('data_push',{p_token:tok(),p_ops:batch.map(p=>outbox[p]==null?{path:p}:{path:p,data:outbox[p]})});
     batch.forEach(p=>{if(outbox[p]===snap[p])delete outbox[p]});saveOut();syncing=false;
     if(Object.keys(outbox).length)return flush();setSync('ok');
-  }catch(e){syncing=false;setSync(netErr(e)?'offline':'err');if(e.code==='E_EXPIRED'){refreshMe();setSync('err');setTimeout(flush,300000);return}if(e.code!=='E_AUTH'){clearTimeout(ft);ft=setTimeout(flush,netErr(e)?15000:30000)}}
+  }catch(e){syncing=false;setSync(netErr(e)?'offline':'err');if(e.code==='E_EXPIRED'){refreshMe();setSync('err');clearTimeout(ft);ft=setTimeout(flush,300000);return}if(e.code!=='E_AUTH'){clearTimeout(ft);ft=setTimeout(flush,netErr(e)?15000:30000)}}
 }
 // المزامنة من الخادم: أول مرة كل البيانات، وبعدها ما تغيّر فقط (أخف على الشبكات الضعيفة)
 let firstLoading=false;
