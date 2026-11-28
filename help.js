@@ -299,24 +299,37 @@
   const qGet = () => { try { return JSON.parse(localStorage.getItem(QK) || '[]'); } catch (e) { return []; } };
   const qSet = a => { try { a.length ? localStorage.setItem(QK, JSON.stringify(a)) : localStorage.removeItem(QK); } catch (e) {} };
   const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
-  const sendNow = (tk, ticket) => rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view } }, SEND_MS);
+  const sendNow = (tk, ticket, cid) => rpc('help_request', { p_token: tk, p_problem: ticket.problemId || '', p_text: ticket.text, p_meta: { lang: ticket.lang, appVersion: ticket.appVersion, view: ticket.view, cid: cid || '' } }, SEND_MS);
+  const accId = () => { try { return (sess && sess.me && (sess.me.id || sess.me.phone)) || ''; } catch (e) { return ''; } };
+  // الطابور مربوط بالحساب، محدود (20 طلبًا، 7 أيام)، ولا يتكرر فيه نفس الطلب
   function queue(ticket) {
-    const q = qGet();
-    if (!q.some(x => x.t.problemId === ticket.problemId && x.t.text === ticket.text)) q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: ticket });
-    qSet(q);
+    const now = Date.now(), acc = accId();
+    const q = qGet().filter(x => x.acc === acc && now - (x.at || 0) < 7 * 864e5);
+    if (!q.some(x => x.t.problemId === ticket.problemId && x.t.text === ticket.text)) q.push({ id: now.toString(36) + Math.random().toString(36).slice(2, 6), acc, at: now, tries: 0, t: ticket });
+    qSet(q.slice(-20));
   }
-  // يُرسل الطابور عند عودة الاتصال: كل طلب مرة واحدة فقط. لا يبقى في الطابور إلا ما لم يخرج من الهاتف أصلًا (لا شبكة)؛
-  // أي نتيجة أخرى (نجاح، رفض، انتهاء مهلة قد يكون الطلب وصل فيها) تُخرجه من الطابور فلا يتكرر.
+  // يُرسل الطابور عند عودة الاتصال: كل طلب مرة واحدة. يُسحب الطلب من الطابور قبل إرساله (فلا تراه نافذة أخرى للتطبيق)،
+  // ولا يعود إليه إلا إذا لم يخرج من الهاتف: الهاتف بلا شبكة، أو انقطاع غامض (مرة واحدة فقط)، أو «طلبات كثيرة».
   let flushing = false;
   async function flushQueue() {
     if (flushing || !canSend() || isOffline()) return;
-    let q = qGet(); if (!q.length) return;
     flushing = true;
     try {
-      let tk = ''; try { tk = tok(); } catch (e) {}
-      for (const item of q) {
-        try { await sendNow(tk, item.t); } catch (e) { if (e && e.code === 'E_NET') break; }   // لا شبكة: يبقى ليُعاد لاحقًا
-        q = qGet().filter(x => x.id !== item.id); qSet(q);
+      const acc = accId(); let tk = ''; try { tk = tok(); } catch (e) {}
+      qSet(qGet().filter(x => x.acc === acc && Date.now() - (x.at || 0) < 7 * 864e5));   // طلبات حساب آخر أو قديمة جدًا لا تُرسل
+      for (;;) {
+        const q = qGet(), item = q.find(x => x.acc === acc); if (!item) break;
+        qSet(q.filter(x => x.id !== item.id));                      // سحب قبل الإرسال
+        let back = false, stop = false;
+        try { await sendNow(tk, item.t, item.id); }
+        catch (e) {
+          const c = e && e.code;
+          if (c === 'E_NET' && (isOffline() || item.tries < 1)) { back = true; stop = true; item.tries++; }
+          else if (c === 'E_RATE') { back = true; stop = true; }
+          else if (c === 'E_AUTH' || c === 'E_SUSPENDED') { stop = true; }   // الحساب خرج: لا إعادة (يُمسح الطابور عند الخروج)
+        }
+        if (back) qSet([item, ...qGet()]);
+        if (stop) break;
       }
     } finally { flushing = false; }
   }
@@ -335,7 +348,7 @@
       focusScreen();   // لا عودة تلقائية هنا: الروابط تحتاج وقتًا للقراءة، والعودة بزر «رجوع»
     } catch (e) {
       const c = e && e.code;
-      if (c === 'E_NET') { queue(ticket); if (chat && my === gen) { box.innerHTML = lead + `<p>${U.queued}</p>` + backBtn(); focusScreen(); } return; }   // لم يخرج من الهاتف: يُحفظ ويُرسل لاحقًا
+      if (c === 'E_NET' && isOffline()) { queue(ticket); if (chat && my === gen) { box.innerHTML = lead + `<p>${U.queued}</p>` + backBtn(); focusScreen(); } return; }   // لم يخرج من الهاتف: يُحفظ ويُرسل لاحقًا
       if (!chat || my !== gen) return;
       lastFailed = ticket;
       box.innerHTML = lead + `<p>${c === 'E_RATE' ? U.rate : U.retryMsg}</p>` + (c === 'E_RATE' ? '' : `<div class="hact"><button type="button" class="pri" data-hretry>${U.retry}</button></div>`) + contactHtml(true, l) + backBtn();
@@ -391,7 +404,7 @@
     upd();
   }
 
-  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, flushQueue, queueSize: () => qGet().length, open: openChat, close: closeChat,
+  root.DarHelp = { ADMIN_CONTACT, HELP, CATS, UI, LBL, SCREENS: Object.keys(SCREENS), svg, contactHtml, contactLinks, buildTicket, canSend, sendEnabled: HELP_SEND_ENABLED, flushQueue, clearQueue: () => qSet([]), queueSize: () => qGet().length, open: openChat, close: closeChat,
     title: (id, l) => { const p = HELP.find(x => x.id === id); return p ? p.t[l === 'fr' ? 'fr' : 'ar'] : (id === 'free' || !id ? (l === 'fr' ? 'Texte libre' : 'نص حر') : id); } };
   if (typeof document !== 'undefined') init();
 })(typeof window !== 'undefined' ? window : globalThis);

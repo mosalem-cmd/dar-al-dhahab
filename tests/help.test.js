@@ -138,7 +138,10 @@ test('help request: timeout + retry, offline queue sent exactly once', () => {
   assert.match(src, /data-hretry/, 'retry button');
   assert.match(src, /restoreText\(ticket\.text\)/, 'typed text kept on failure');
   assert.match(src, /if \(isOffline\(\)\) \{ queue\(ticket\)/, 'offline: saved on the phone');
-  assert.match(src, /if \(e && e\.code === 'E_NET'\) break;/, 'only never-sent requests stay queued');
+  assert.match(src, /qSet\(q\.filter\(x => x\.id !== item\.id\)\);\s*\/\/ سحب قبل الإرسال/, 'item taken out before sending (no double send across windows)');
+  assert.match(src, /x\.acc === acc/, 'queue bound to the account');
+  assert.match(read('index.html'), /localStorage\.removeItem\('dar-help-queue'\)[\s\S]*localStorage\.removeItem\('dar-help-queue'\)/, 'queue cleared on logout and on lost session');
+  assert.match(src, /qSet\(q\.slice\(-20\)\)/, 'queue size bounded');
   assert.match(src, /if \(flushing \|\| !canSend\(\)/, 'one sender at a time');
   for (const l of ['ar', 'fr']) assert.ok(H.UI[l].retryMsg && H.UI[l].retry && H.UI[l].queued, l + ': strings');
 });

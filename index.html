@@ -1885,8 +1885,8 @@ async function pull(){if(!sess)return;
 // تحديث بيانات الحساب (الاشتراك) من الخادم ثم إعادة رسم الرئيسية
 async function refreshMe(){try{const m=await rpc('me',{p_token:tok()});if(m){sess.me=m;saveSess(sess);if(view==='home')openHome(true)}}catch(e){}}
 async function doLogout(){try{if(Object.keys(outbox).length)await flush()}catch(e){}try{await rpc('logout',{p_token:tok()})}catch(e){}
-  saveSess(null);outbox={};saveOut();await window.__backup.wipe();location.reload()}
-function onAuthLost(code){saveSess(null);outbox={};saveOut();window.__backup.wipe().then(()=>{openWelcome('login');$('#wMsg').innerHTML=`<div class="note">${t(code)}</div>`})}
+  saveSess(null);outbox={};saveOut();try{localStorage.removeItem('dar-help-queue')}catch(e){}await window.__backup.wipe();location.reload()}
+function onAuthLost(code){saveSess(null);outbox={};saveOut();try{localStorage.removeItem('dar-help-queue')}catch(e){}window.__backup.wipe().then(()=>{openWelcome('login');$('#wMsg').innerHTML=`<div class="note">${t(code)}</div>`})}
 // التعافي الذاتي: عند عودة الإنترنت أو الرجوع إلى التطبيق (من الخلفية أو من تطبيق آخر) نعيد المحاولة فورًا
 let lastPull=0;
 function resume(){if(!sess)return;clearTimeout(ft);flush();if(Date.now()-lastPull>30000){lastPull=Date.now();pull()}}
