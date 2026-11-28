@@ -224,3 +224,13 @@ test('server requests time out and sync recovers by itself', () => {
   for (const ev of ["'online'", "'visibilitychange'", "'pageshow'", "'focus'"]) assert.ok(html.includes('addEventListener(' + ev), 'recovers on ' + ev);
   assert.match(html, /E_TIMEOUT:'[^']+'[\s\S]*E_TIMEOUT:'[^']+'/, 'message in both languages');
 });
+
+// v2.10.3: لا تتحرك الصفحة الخلفية ما دامت أي نافذة مفتوحة (حل الآيفون)
+test('background scroll is locked while any window is open', () => {
+  const html = read('index.html');
+  assert.match(html, /function updateScrollLock\(\)\{/);
+  assert.match(html, /new MutationObserver\(updateScrollLock\)\.observe\(document\.body,\{childList:true,subtree:true,attributes:true/);
+  assert.match(html, /body\.lockscroll\{position:fixed/, 'iOS-safe lock: fixed body with saved offset');
+  assert.match(html, /window\.scrollTo\(0,y\)/, 'position restored on close');
+  assert.match(html, /\.sheet\{[^}]*overscroll-behavior:contain/);
+});

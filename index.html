@@ -79,7 +79,9 @@ table.pt{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:10
 .pt caption{font-weight:700;padding:4px;caption-side:top}
 .fab{position:fixed;left:16px;bottom:16px;width:58px;height:58px;border-radius:50%;background:var(--gold);border:0;color:#fff;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:8;padding:0;transition:bottom .2s}
 body.formv .fab{bottom:84px}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:flex;align-items:flex-end;justify-content:center}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:flex;align-items:flex-end;justify-content:center;overscroll-behavior:contain}
+.sheet>div,.sheet .hlog{overscroll-behavior:contain}
+body.lockscroll{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .sheet>div{background:var(--card);width:100%;max-width:640px;max-height:85vh;border-radius:16px 16px 0 0;padding:14px;display:flex;flex-direction:column;gap:8px}
 .sheet .hd{display:flex;justify-content:space-between;align-items:center}
 .sheet .hd b{font-size:17px}
@@ -381,7 +383,7 @@ button.pri,[data-theme=dark] button.pri{background:#2e0e02!important;color:#fff!
 .helpw .hbox{height:90vh;max-height:90vh;padding:0;gap:0;overflow:hidden}
 .helpw .hd{padding:12px 14px;border-bottom:1px solid var(--line)}
 .helpw .ht{display:flex;align-items:center;gap:8px}.helpw .ht svg{width:22px;height:22px;color:var(--ink)}
-.hlog{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.hlog{flex:1;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
 .hm{max-width:92%;padding:10px 12px;border-radius:16px;line-height:1.6;font-size:14px}
 .hm p{margin:0 0 6px}
 .hm.bot{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-start-start-radius:4px}
@@ -669,7 +671,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.10.2';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.10.3';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -1812,6 +1814,15 @@ function openForgot(){needSetup=true;
     catch(err){b.disabled=false;m.innerHTML=`<div class="note">${errT(err)}</div>`}};
   show('wel');
 }
+
+/* ---------- قفل تمرير الخلفية ما دامت أي نافذة مفتوحة (يعمل على الآيفون: تثبيت الصفحة ثم إعادتها لمكانها) ---------- */
+let lockY=null;
+function updateScrollLock(){
+  const open=[...document.querySelectorAll('.sheet')].some(x=>!x.classList.contains('hide'));
+  if(open&&lockY===null){lockY=window.scrollY||0;document.body.style.top=(-lockY)+'px';document.body.classList.add('lockscroll')}
+  else if(!open&&lockY!==null){const y=lockY;lockY=null;document.body.classList.remove('lockscroll');document.body.style.top='';window.scrollTo(0,y)}
+}
+new MutationObserver(updateScrollLock).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
 
 /* ---------- server account & sync ---------- */
 const SB={url:'https://dlabrfzqrsslbivrakcy.supabase.co/rest/v1/rpc/',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsYWJyZnpxcnNzbGJpdnJha2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTM2NjUsImV4cCI6MjExMDU4OTY2NX0.rkRXJ_tIDgp-VEwqpNwAYwdgq9GALC4B82KXUM5aVXI'};
