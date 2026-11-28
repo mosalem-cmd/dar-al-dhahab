@@ -232,5 +232,6 @@ test('background scroll is locked while any window is open', () => {
   assert.match(html, /new MutationObserver\(updateScrollLock\)\.observe\(document\.body,\{childList:true,subtree:true,attributes:true/);
   assert.match(html, /body\.lockscroll\{position:fixed/, 'iOS-safe lock: fixed body with saved offset');
   assert.match(html, /window\.scrollTo\(0,y\)/, 'position restored on close');
+  assert.match(html, /if\(!keep&&lockY!==null\)lockY=0;/, 'navigating from an open window starts the new page at the top');
   assert.match(html, /\.sheet\{[^}]*overscroll-behavior:contain/);
 });

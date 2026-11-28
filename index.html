@@ -796,7 +796,7 @@ $('#btnLang').onclick=()=>{lang=lang==='fr'?'ar':'fr';store.set('lang',lang);app
 function rerender(){if(view==='home')openHome(true);else if(view==='list')renderList();else if(view==='form')openForm(cur,editing,true);else if(view==='set')openSet(true);else if(view==='rep')openRep();else if(view==='cust')openCust();else if(view==='prof')openProf(profKey,true);else if(view==='cform')openCForm(cfEdit,true);else if(view==='priv')openPriv();else if(view==='del')openDel();else if(view==='wel')openWelcome(authMode);else if(view==='msgs')openMsgs(true);else if(view==='pays')openPays(true);else if(view==='pwd')openPwd(true);else if(view==='adm')openAdmin(admTab,true)}
 
 /* ---------- navigation ---------- */
-let prevView='';
+let prevView='',lockY=null;   // lockY: موضع الصفحة المحفوظ أثناء قفل التمرير (نافذة مفتوحة)
 const SECID=v=>'v'+(v==='cform'?'CForm':v[0].toUpperCase()+v.slice(1));
 function show(v,keep,shell){
   if(v!==view)prevView=view;
@@ -818,6 +818,7 @@ function show(v,keep,shell){
   document.body.classList.toggle('formv',v==='form');
   const mk={home:'home',list:'list',form:'new',cust:'cust',prof:'cust',cform:'cust',rep:'rep',exp:'exp',set:'set',priv:'privacy',del:'del',msgs:'set',pays:'set',pwd:'set',phone:'set',adm:'set'}[v];
   document.querySelectorAll('#drawer a,#tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===mk));
+  if(!keep&&lockY!==null)lockY=0;                      // انتقال من نافذة مفتوحة: الصفحة الجديدة تبدأ من أعلاها عند فك القفل
   if(!keep)window.scrollTo(0,0);
   syncBackEntry();
 }
@@ -1816,7 +1817,6 @@ function openForgot(){needSetup=true;
 }
 
 /* ---------- قفل تمرير الخلفية ما دامت أي نافذة مفتوحة (يعمل على الآيفون: تثبيت الصفحة ثم إعادتها لمكانها) ---------- */
-let lockY=null;
 function updateScrollLock(){
   const open=[...document.querySelectorAll('.sheet')].some(x=>!x.classList.contains('hide'));
   if(open&&lockY===null){lockY=window.scrollY||0;document.body.style.top=(-lockY)+'px';document.body.classList.add('lockscroll')}
