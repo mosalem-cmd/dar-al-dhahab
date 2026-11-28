@@ -610,7 +610,7 @@ const LOGO=document.querySelector('.logo').src;
 ['gesturestart','gesturechange'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
 // منع تكبير الشاشة بالنقر المزدوج على النصوص فقط. الأزرار والروابط والشريط السفلي لا تُلغى نقراتها أبدًا
 // (كانت النقرات المتتالية بأقل من 300ms تُلغى، فلا تتبدل الصفحات عند الضغط السريع). التكبير يمنعه أيضًا touch-action:manipulation.
-let lastT=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastT<300&&!e.target.closest('input,textarea,select,a,button,label,summary,[data-go],[role=button],[tabindex]'))e.preventDefault();lastT=n},{passive:false});
+let lastT=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastT<300&&!e.target.closest('input,textarea,select,a,button,label,summary,[data-go],[data-open],[data-ck],[data-acc],[role=button],[tabindex]'))e.preventDefault();lastT=n},{passive:false});
 const AR='٠١٢٣٤٥٦٧٨٩';
 const num=v=>{if(v==null)return 0;const s=String(v).replace(/[٠-٩]/g,d=>AR.indexOf(d)).replace(/٫/g,'.').replace(/[,\s]/g,'');const n=parseFloat(s);return isFinite(n)?n:0};
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');

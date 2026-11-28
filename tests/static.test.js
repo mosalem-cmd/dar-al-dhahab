@@ -210,6 +210,6 @@ test('fast taps on buttons and the bottom bar are never cancelled', () => {
   const html = read('index.html');
   const line = html.split('\n').find(l => l.includes("addEventListener('touchend'"));
   assert.ok(line, 'touchend handler present');
-  for (const sel of ['a', 'button', '[data-go]']) assert.ok(line.includes(sel), 'interactive element excluded: ' + sel);
+  for (const sel of ['a', 'button', '[data-go]', '[data-open]', '[data-ck]', '[data-acc]']) assert.ok(line.includes(sel), 'interactive element excluded: ' + sel);
   assert.match(html, /html\{touch-action:manipulation/, 'double-tap zoom still disabled by CSS');
 });
