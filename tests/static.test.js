@@ -235,3 +235,14 @@ test('background scroll is locked while any window is open', () => {
   assert.match(html, /if\(!keep&&lockY!==null\)lockY=0;/, 'navigating from an open window starts the new page at the top');
   assert.match(html, /\.sheet\{[^}]*overscroll-behavior:contain/);
 });
+
+// v2.10.5: أول فاتورة لزبون جديد تظهر فورًا في بطاقته (كان الزبون يُضاف مرتين فتُحسب الفاتورة على نسخة لا تظهر)
+test('new customer is never added twice; caches are invalidated on every change', () => {
+  const html = read('index.html');
+  assert.match(html, /if\(!customers\.some\(x=>x\.id===id\)\)customers=\[\.\.\.customers,d\]/, 'no double add');
+  assert.match(html, /if\(c\.id&&byId\[c\.id\]\)return;/, 'duplicate customers ignored in the cards');
+  assert.match(html, /byId\[c\.id\]=m\.get\(o\.key\)/, 'invoices counted on the visible customer object');
+  assert.match(html, /function bustCaches\(\)\{_clK=null;_clI=null;_clC=null;RC=null\}/);
+  const n = [...html.matchAll(/bustCaches\(\)/g)].length - 1;
+  assert.ok(n >= 9, 'invalidated after invoice save/cancel, customer save/delete and every data snapshot (found ' + n + ')');
+});

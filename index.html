@@ -671,7 +671,7 @@ const itm=n=>lang==='fr'&&ITEMS[n]?ITEMS[n]:n;
 
 const COSTS=['الطحن','التصفية','النقل','إنزال المتاع','نقل العمال وإباس','المؤونة','الخطوط'];
 const PCTS=['صاحب الحاسي','المقاول','المقاول','المقاول','مرتو بيكير','أكرب','مشرف','العمال'];
-const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.10.4';
+const APP={ar:'دار الذهب',fr:'Maison de l’Or'},VER='2.10.5';
 /* ---------- انتهاء الاشتراك: مهلة 48 ساعة ---------- */
 // الاشتراك ساري حتى نهاية يوم paid_until (توقيت موريتانيا = UTC). بعده مهلة 48
 // ساعة يعمل فيها كل شيء مع رسالة وعدّاد، ثم يتوقف الحساب (الخادم يرفض المزامنة)
@@ -1097,7 +1097,7 @@ async function setCancelled(no,on){const i=allInvoices.find(x=>x.no===no);if(!i)
   const d=JSON.parse(JSON.stringify(i));
   if(on)d.cancelled={at:Date.now()};else delete d.cancelled;
   d.history=histAdd(d.history,{at:Date.now(),a:on?'cancel':'restore'});
-  try{await db.collection('invoices').doc(pad(no)).set(d)}catch(err){note('delErr')}}
+  try{await db.collection('invoices').doc(pad(no)).set(d);bustCaches()}catch(err){note('delErr')}}
 function msg(h){$('#msg').innerHTML=h}
 function note(k){noteKey=k||'';$('#notice').innerHTML=k?`<div class="note">${t(k)}</div>`:''}
 let saving=false;
@@ -1118,7 +1118,7 @@ async function doSave(stay){
   if(!orig)data.history=histAdd(cur.history,{at:Date.now(),a:'new'});
   else{const ch=histDiff(orig,data);if(ch.length)data.history=histAdd(orig.history,{at:Date.now(),a:'edit',c:ch});else data.history=orig.history||[]}
   try{
-    await db.collection('invoices').doc(pad(cur.no)).set(data);
+    await db.collection('invoices').doc(pad(cur.no)).set(data);bustCaches();
     if(origNo&&origNo!==cur.no){try{await db.collection('invoices').doc(pad(origNo)).delete()}catch(e){}}
     origNo=cur.no;
     editing=true;
@@ -1423,10 +1423,13 @@ const initial=n=>(String(n||'').trim()[0]||'?').toUpperCase();
 const BASIC=['regNo','regDate','listNo','serial'];
 // نتيجة clients() تُخزَّن ما دام مصدراها (invoices وcustomers) لم يُستبدلا؛ تُحسب مرة لكل تغيّر في البيانات (كانت تُحسب في كل نقرة وكل ضغطة مفتاح)
 let _clK=null,_clI=null,_clC=null;
+// إبطال كل النتائج المخزنة (الزبائن والبطاقات واللوحة) بعد أي حفظ أو تعديل أو إلغاء أو حذف، وعند وصول بيانات جديدة
+function bustCaches(){_clK=null;_clI=null;_clC=null;RC=null}
 function clients(){if(_clK&&_clI===invoices&&_clC===customers)return _clK;_clK=clientsCompute();_clI=invoices;_clC=customers;return _clK}
 function clientsCompute(){
   const m=new Map(), byId={};
-  customers.forEach(c=>{const o={...c,key:ckey(c.name,c.phone),saved:true,invs:[],count:0,grams:0,gold:0,costs:0,net:0,unpaid:0,unpaidAmt:0,last:''};if(!m.has(o.key))m.set(o.key,o);byId[c.id]=o});
+  customers.forEach(c=>{if(c.id&&byId[c.id])return;   // نفس الزبون مرتين: يُتجاهل التكرار
+    const o={...c,key:ckey(c.name,c.phone),saved:true,invs:[],count:0,grams:0,gold:0,costs:0,net:0,unpaid:0,unpaidAmt:0,last:''};if(!m.has(o.key))m.set(o.key,o);byId[c.id]=m.get(o.key)});
   [...invoices].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||a.no-b.no).forEach(i=>{
     const name=String(i.client||'').trim(), ph=digits(i.phone);
     if(!name&&!ph&&!i.custId)return;
@@ -1451,7 +1454,7 @@ async function linkCustomer(){
   if(!name&&!phone)return;
   let c=(cur.custId&&customers.find(x=>x.id===cur.custId))||customers.find(x=>ckey(x.name,x.phone)===ckey(name,phone))||(!digits(phone)&&customers.find(x=>x.name===name))||customers.find(x=>!digits(x.phone)&&x.name===name);
   if(!c){const id=newCid();const d={id,name,phone,createdAt:Date.now()};BASIC.forEach(k=>{if(cur[k])d[k]=cur[k]});
-    await db.collection('customers').doc(id).set(d);customers=[...customers,d];cur.custId=id;return}
+    await db.collection('customers').doc(id).set(d);if(!customers.some(x=>x.id===id))customers=[...customers,d];bustCaches();cur.custId=id;return}   // قد يكون المستمع أضافه فعلًا
   cur.custId=c.id;
   const up={};if(!c.phone&&phone)up.phone=phone;BASIC.forEach(k=>{if(!c[k]&&cur[k])up[k]=cur[k]});
   if(Object.keys(up).length){await db.collection('customers').doc(c.id).set({...c,...up})}
@@ -1479,7 +1482,7 @@ document.addEventListener('click',e=>{
   if(ce){e.stopPropagation();const c=clients().find(x=>x.key===ce.dataset.ce);if(c)openCForm(c);return}
   const cd=e.target.closest('[data-cd]');
   if(cd){e.stopPropagation();if(cd.dataset.sure!=='1'){cd.dataset.sure='1';cd.innerHTML=ic('check');cd.title=t('custDelHint');setTimeout(()=>{if(cd.isConnected){cd.dataset.sure='';cd.innerHTML=ic('trash')}},4000);return}
-    db.collection('customers').doc(cd.dataset.cd).delete().then(()=>{customers=customers.filter(x=>x.id!==cd.dataset.cd);openCust()}).catch(()=>{});return}
+    db.collection('customers').doc(cd.dataset.cd).delete().then(()=>{customers=customers.filter(x=>x.id!==cd.dataset.cd);bustCaches();openCust()}).catch(()=>{});return}
   const nb=e.target.closest('[data-nk]');
   if(nb){e.stopPropagation();const c=clients().find(x=>x.key===nb.dataset.nk);if(c)newFor(c);return}
   const cc=e.target.closest('[data-ck]');
@@ -1533,7 +1536,7 @@ function openCForm(c,keep){
     const old=customers.find(x=>x.id===id)||{};
     const doc={...old,...d,id,createdAt:old.createdAt||Date.now()};
     try{await db.collection('customers').doc(id).set(doc);
-      customers=[...customers.filter(x=>x.id!==id),doc];
+      customers=[...customers.filter(x=>x.id!==id),doc];bustCaches();
       // link this customer's earlier invoices so they stay attached after a name/phone change
       if(c){for(const i of c.invs){if(i.custId!==id){try{await db.collection('invoices').doc(pad(i.no)).set({...i,custId:id})}catch(e){}}}}
       m.innerHTML=`<div class="note ok">${tI('custSaved')}</div>`;clearDirty();
@@ -1541,7 +1544,7 @@ function openCForm(c,keep){
     catch(err){m.innerHTML=`<div class="note">${tI('saveErr')}</div>`;return false}};
   $('#cfSave').onclick=()=>cfSaveDo(false);
   const dl_=$('#cfDel');if(dl_)dl_.onclick=async()=>{if(dl_.dataset.sure!=='1'){dl_.dataset.sure='1';dl_.textContent=t('sure');return}
-    try{await db.collection('customers').doc(c.id).delete();customers=customers.filter(x=>x.id!==c.id)}catch(e){}openCust()};
+    try{await db.collection('customers').doc(c.id).delete();customers=customers.filter(x=>x.id!==c.id)}catch(e){}bustCaches();openCust()};
   show('cform',keep);
 }
 
@@ -2206,13 +2209,13 @@ applyChrome();renderList();openHome();
   if(!sess){store.get('lang')?openWelcome('login'):openLangPick()}else{needSetup=false;try{const sd=await db.doc('settings/main').get();if(sd.exists){S={...S,...sd.data()};applyChrome()}}catch(e){}
     flush();pull();rpc('me',{p_token:tok()}).then(m=>{if(m){sess.me=m;saveSess(sess);applyChrome();if(view==='set')openSet(true);if(view==='home')openHome(true)}}).catch(()=>{});setTimeout(()=>{if(isAdmin()&&view==='home')openAdmin('ov')},50)}
   db.doc('settings/main').onSnapshot(d=>{if(d.exists){S={...S,...d.data()};needSetup=false;applyChrome()}},()=>{});
-  db.collection('expenses').onSnapshot(sn=>{expenses=sn.docs.map(d=>({...d.data(),id:d.id}));if(view==='exp')openExp(true);else if(view==='rep')openRep();else if(view==='home')openHome(true)},()=>{});
-  db.collection('customers').onSnapshot(sn=>{customers=sn.docs.map(d=>({...d.data(),id:d.id}));if(view==='cust'&&document.activeElement.id!=='cSearch')openCust();else if(view==='prof')openProf(profKey,true)},()=>{});
+  db.collection('expenses').onSnapshot(sn=>{expenses=sn.docs.map(d=>({...d.data(),id:d.id}));bustCaches();if(view==='exp')openExp(true);else if(view==='rep')openRep();else if(view==='home')openHome(true)},()=>{});
+  db.collection('customers').onSnapshot(sn=>{customers=sn.docs.map(d=>({...d.data(),id:d.id}));bustCaches();if(view==='cust'&&document.activeElement.id!=='cSearch')openCust();else if(view==='prof')openProf(profKey,true)},()=>{});
   const timer=setTimeout(()=>note('slow'),10000);
   db.collection('invoices').orderBy('no','desc').onSnapshot(snap=>{
     if(!snap.metadata.fromCache){clearTimeout(timer);if(noteKey==='slow')note('')}
     // الفواتير الملغاة تبقى محفوظة وظاهرة في القائمة، لكنها لا تدخل في أي مجموع
-    allInvoices=snap.docs.map(d=>d.data());invoices=allInvoices.filter(i=>!i.cancelled);loaded=true;
+    allInvoices=snap.docs.map(d=>d.data());invoices=allInvoices.filter(i=>!i.cancelled);loaded=true;bustCaches();
     if(window.__local&&!sess&&invoices.length&&!noteKey){const lb=window.__backup.last();if(!lb||Date.now()-new Date(lb)>7*864e5)note('backupDue')}if(view==='home')openHome(true);else if(view==='list')renderList();else if(view==='rep')openRep();else if(view==='cust'&&document.activeElement.id!=='cSearch')openCust();else if(view==='prof')openProf(profKey,true);
   },err=>{clearTimeout(timer);loaded=true;note('loadErr');renderList()});
 })();
