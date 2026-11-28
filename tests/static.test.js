@@ -204,3 +204,12 @@ test('admin audit log: tab, rpc with cursor, escaped details, labels in both lan
   assert.match(sql, /right\(new\.code, 3\)/, 'only the last 3 chars of a code');
   assert.doesNotMatch(sql, /'code', new\.code/, 'full code never stored');
 });
+
+// v2.10.1: النقرات السريعة على الأزرار والشريط السفلي لا تُلغى (كان منع التكبير يلغي أي نقرة بعد أقل من 300ms)
+test('fast taps on buttons and the bottom bar are never cancelled', () => {
+  const html = read('index.html');
+  const line = html.split('\n').find(l => l.includes("addEventListener('touchend'"));
+  assert.ok(line, 'touchend handler present');
+  for (const sel of ['a', 'button', '[data-go]']) assert.ok(line.includes(sel), 'interactive element excluded: ' + sel);
+  assert.match(html, /html\{touch-action:manipulation/, 'double-tap zoom still disabled by CSS');
+});
